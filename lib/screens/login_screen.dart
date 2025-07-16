@@ -98,7 +98,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
       if (user != null) {
         // ✅ Call verify-user API
-        final uri = Uri.parse('http://localhost:3000/api/auth/verify-user/');
+        final uri = Uri.parse('http://20.20.76.11:3000/api/auth/verify-user/');
         final verifyRes = await http.post(
           uri,
           headers: {'Content-Type': 'application/json'},
