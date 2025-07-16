@@ -25,16 +25,18 @@ class ForgotPasswordScreen extends StatelessWidget {
               decoration: InputDecoration(
                 prefixIcon: const Icon(Icons.email_outlined),
                 hintText: "your.email@example.com",
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                filled: true, // Enables background fill
+                fillColor: Colors.white, // Sets background to white
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
               ),
             ),
             const SizedBox(height: 24),
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: () {
-                  
-                },
+                onPressed: () {},
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.pink,
                 ),

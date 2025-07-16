@@ -18,6 +18,9 @@ class _LoginScreenState extends State<LoginScreen> {
   final _passwordController = TextEditingController();
   bool isLoading = false;
 
+  String? emailErrorText;
+  String? passwordErrorText;
+
   @override
   void initState() {
     super.initState();
@@ -49,14 +52,37 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  void _login() async {
+  bool _validateInputs() {
+    bool isValid = true;
     final email = _emailController.text.trim();
     final password = _passwordController.text;
 
-    if (email.isEmpty || password.isEmpty) {
-      _showMessage('Please enter both email and password.');
-      return;
-    }
+    setState(() {
+      emailErrorText = null;
+      passwordErrorText = null;
+
+      if (email.isEmpty) {
+        emailErrorText = 'Email is required';
+        isValid = false;
+      } else if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(email)) {
+        emailErrorText = 'Enter a valid email address';
+        isValid = false;
+      }
+
+      if (password.isEmpty) {
+        passwordErrorText = 'Password is required';
+        isValid = false;
+      }
+    });
+
+    return isValid;
+  }
+
+  void _login() async {
+    if (!_validateInputs()) return;
+
+    final email = _emailController.text.trim();
+    final password = _passwordController.text;
 
     setState(() => isLoading = true);
 
@@ -129,7 +155,8 @@ class _LoginScreenState extends State<LoginScreen> {
             Center(
               child: Column(
                 children: const [
-                  Icon(Icons.cloud_circle_rounded, size: 80, color: AppColors.primary),
+                  Icon(Icons.cloud_circle_rounded,
+                      size: 80, color: AppColors.primary),
                   SizedBox(height: 8),
                   Text('Your Business, Simplified.'),
                 ],
@@ -143,7 +170,11 @@ class _LoginScreenState extends State<LoginScreen> {
               keyboardType: TextInputType.emailAddress,
               decoration: InputDecoration(
                 hintText: 'Enter your email address',
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                filled: true,
+                fillColor: Colors.white,
+                errorText: emailErrorText,
+                border:
+                    OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
               ),
             ),
             const SizedBox(height: 16),
@@ -154,7 +185,11 @@ class _LoginScreenState extends State<LoginScreen> {
               obscureText: true,
               decoration: InputDecoration(
                 hintText: 'Enter your password',
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                filled: true,
+                fillColor: Colors.white,
+                errorText: passwordErrorText,
+                border:
+                    OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
               ),
             ),
             const SizedBox(height: 12),
@@ -172,7 +207,8 @@ class _LoginScreenState extends State<LoginScreen> {
                   onPressed: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (_) => const ForgotPasswordScreen()),
+                      MaterialPageRoute(
+                          builder: (_) => const ForgotPasswordScreen()),
                     );
                   },
                   child: const Text(
