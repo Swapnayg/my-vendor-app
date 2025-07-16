@@ -4,6 +4,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../theme/colors.dart';
 import 'forgot_password_screen.dart';
 import 'dashboard_screen.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -93,9 +95,34 @@ class _LoginScreenState extends State<LoginScreen> {
       );
 
       final user = response.user;
+
       if (user != null) {
-        await _saveCredentials();
-        _showMessage('Login successful!', isSuccess: true);
+        // ✅ Call verify-user API
+        final uri = Uri.parse('http://localhost:3000/api/auth/verify-user/');
+        final verifyRes = await http.post(
+          uri,
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode({
+            'email': email,
+            'password': password,
+          }),
+        );
+
+        if (verifyRes.statusCode == 200) {
+          final data = jsonDecode(verifyRes.body);
+
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString('email', email);
+          await prefs.setString('userId', data['userId']);
+          await prefs.setString('role', data['role']);
+          if (rememberMe) {
+            await prefs.setString('password', password);
+          }
+
+          _showMessage('Login successful!', isSuccess: true);
+        } else {
+          _showMessage('Login succeeded, but failed to fetch user details.');
+        }
       } else {
         _showMessage('Login failed. Try again.');
       }
