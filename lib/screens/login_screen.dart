@@ -1,3 +1,5 @@
+// ignore_for_file: avoid_print
+
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -98,7 +100,8 @@ class _LoginScreenState extends State<LoginScreen> {
 
       if (user != null) {
         // ✅ Call verify-user API
-        final uri = Uri.parse('http://20.20.76.11:3000/api/auth/verify-user/');
+        final uri = Uri.parse(
+            'https://vendor-admin-portal.netlify.app/api/auth/verify-user');
         final verifyRes = await http.post(
           uri,
           headers: {'Content-Type': 'application/json'},
@@ -110,11 +113,13 @@ class _LoginScreenState extends State<LoginScreen> {
 
         if (verifyRes.statusCode == 200) {
           final data = jsonDecode(verifyRes.body);
-
+          final user = data['user'];
           final prefs = await SharedPreferences.getInstance();
           await prefs.setString('email', email);
-          await prefs.setString('userId', data['userId']);
-          await prefs.setString('role', data['role']);
+          await prefs.setString(
+              'userId', user['id'].toString()); // 👈 convert to String
+          await prefs.setString('role', user['role']);
+
           if (rememberMe) {
             await prefs.setString('password', password);
           }
