@@ -156,7 +156,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   _passwordController.clear();
                   Navigator.pushReplacement(
                     context,
-                    MaterialPageRoute(builder: (_) => const DashboardScreen()),
+                    MaterialPageRoute(builder: (_) => const DashboardPage()),
                   );
                 }
               },
