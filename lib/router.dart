@@ -36,8 +36,15 @@ final GoRouter router = GoRouter(
     GoRoute(path: '/home', builder: (context, state) => const HomePage()),
     GoRoute(
       path: '/add-product',
-      builder: (context, state) => const AddProductPage(),
+      name: 'addProduct',
+      builder: (context, state) {
+        // Optional: check if editing by looking for query param or passed extra
+        final product = null; // use null for Add
+
+        return AddProductPage(initialData: product);
+      },
     ),
+
     GoRoute(path: '/reports', builder: (context, state) => const ReportsPage()),
     GoRoute(path: '/profile', builder: (context, state) => const ProfilePage()),
     GoRoute(

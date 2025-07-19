@@ -192,15 +192,9 @@ class _VendorDrawerState extends State<VendorDrawer> {
                   if (expandedSections['My Products'] == true) ...[
                     _drawerItem(
                       context,
-                      'Commission Summary',
-                      '/products/commission-summary',
-                      Icons.monetization_on,
-                    ),
-                    _drawerItem(
-                      context,
-                      'Top Products',
-                      '/products/top',
-                      Icons.star_outline,
+                      'Add New Product',
+                      '/add-product',
+                      Icons.add_box,
                     ),
                     _drawerItem(
                       context,
@@ -214,8 +208,19 @@ class _VendorDrawerState extends State<VendorDrawer> {
                       '/products/inventory',
                       Icons.inventory,
                     ),
+                    _drawerItem(
+                      context,
+                      'Top Products',
+                      '/products/top',
+                      Icons.star_outline,
+                    ),
+                    _drawerItem(
+                      context,
+                      'Commission Summary',
+                      '/products/commission-summary',
+                      Icons.monetization_on,
+                    ),
                   ],
-
                   _drawerSection('Messages'),
                   _drawerItem(
                     context,

@@ -27,10 +27,10 @@ class Product {
   final String name;
   final String description;
   final double price;
+  final double basePrice;
+  final double taxRate;
   final int vendorId;
   final int? categoryId;
-  final bool isAvailable;
-  final String? imageUrl;
   final ProductStatus status;
   final DateTime createdAt;
   final DateTime updatedAt;
@@ -49,13 +49,13 @@ class Product {
     required this.name,
     required this.description,
     required this.price,
+    required this.basePrice,
+    required this.taxRate,
     required this.vendorId,
-    required this.isAvailable,
     required this.status,
     required this.createdAt,
     required this.updatedAt,
     this.categoryId,
-    this.imageUrl,
     this.vendor,
     this.category,
     this.compliance,
@@ -70,10 +70,10 @@ class Product {
     name: json['name'],
     description: json['description'],
     price: (json['price'] as num).toDouble(),
+    basePrice: (json['basePrice'] as num).toDouble(),
+    taxRate: (json['taxRate'] as num).toDouble(),
     vendorId: json['vendorId'],
     categoryId: json['categoryId'],
-    isAvailable: json['isAvailable'],
-    imageUrl: json['imageUrl'],
     status: ProductStatus.fromString(json['status']),
     createdAt: DateTime.parse(json['createdAt']),
     updatedAt: DateTime.parse(json['updatedAt']),
@@ -115,8 +115,6 @@ class Product {
     'price': price,
     'vendorId': vendorId,
     'categoryId': categoryId,
-    'isAvailable': isAvailable,
-    'imageUrl': imageUrl,
     'status': status.toJsonString(),
     'createdAt': createdAt.toIso8601String(),
     'updatedAt': updatedAt.toIso8601String(),

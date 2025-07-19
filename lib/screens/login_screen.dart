@@ -143,6 +143,8 @@ class _LoginScreenState extends State<LoginScreen> {
   void _showMessage(String message, {bool isSuccess = false}) {
     showDialog(
       context: context,
+      barrierDismissible:
+          false, // <-- This prevents dismissing by tapping outside
       builder: (context) {
         return AlertDialog(
           title: Text(isSuccess ? 'Success ✅' : 'Error ❌'),
