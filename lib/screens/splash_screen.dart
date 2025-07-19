@@ -2,7 +2,7 @@
 
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'welcome_screen.dart';
+import 'package:go_router/go_router.dart';
 import '../theme/colors.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -18,11 +18,8 @@ class _SplashScreenState extends State<SplashScreen> {
     super.initState();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      Future.delayed(const Duration(seconds: 5), () {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const WelcomeScreen()),
-        );
+      Future.delayed(const Duration(seconds: 3), () {
+        context.go('/welcome'); // ✅ This uses GoRouter properly
       });
     });
   }
@@ -30,7 +27,7 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white, // ✅ Ensure white background
+      backgroundColor: Colors.white,
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,

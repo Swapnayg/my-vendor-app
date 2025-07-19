@@ -29,6 +29,17 @@ class WelcomeScreen extends StatelessWidget {
                   MaterialPageRoute(builder: (_) => const LoginScreen()),
                 );
               },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFDA70D6), // Orchid color
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 32,
+                  vertical: 16,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
               child: const Text('Get Started'),
             ),
           ],

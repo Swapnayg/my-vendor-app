@@ -9,7 +9,8 @@ void main() async {
 
   await Supabase.initialize(
     url: 'https://yhlngzruoypycqcmpelh.supabase.co',
-    anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+    anonKey:
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlobG5nenJ1b3lweWNxY21wZWxoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI2NTMwMDgsImV4cCI6MjA2ODIyOTAwOH0.fPmphnQITR7Mui9EHowQYA3iwihkDvDwT1O8BGW3ous',
   );
 
   runApp(const MyApp());
@@ -41,9 +42,8 @@ class _MyAppState extends State<MyApp> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp.router(
+      routerConfig: router, // << IMPORTANT
       debugShowCheckedModeBanner: false,
-      theme: appTheme,
-      routerConfig: _showSplash ? splashRouter : appRouter,
     );
   }
 }

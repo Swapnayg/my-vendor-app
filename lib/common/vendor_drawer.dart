@@ -1,32 +1,46 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-class VendorDrawer extends StatelessWidget {
+class VendorDrawer extends StatefulWidget {
   final String activeRoute;
   const VendorDrawer({super.key, required this.activeRoute});
 
-  Widget _buildBadge(Widget icon, int count) {
-    return Stack(
-      clipBehavior: Clip.none,
-      children: [
-        icon,
-        if (count > 0)
-          Positioned(
-            right: -6,
-            top: -4,
-            child: Container(
-              padding: const EdgeInsets.all(3),
-              decoration: const BoxDecoration(
-                color: Colors.red,
-                shape: BoxShape.circle,
-              ),
-              child: Text(
-                '$count',
-                style: const TextStyle(fontSize: 10, color: Colors.white),
-              ),
-            ),
-          )
-      ],
+  @override
+  State<VendorDrawer> createState() => _VendorDrawerState();
+}
+
+class _VendorDrawerState extends State<VendorDrawer> {
+  static const Color highlightColor = Color(0xFFFFC300); // Badge color
+  static const Color sectionBackground = Color(0xFFFFF0CC); // Yellowish tone
+  static const Color highlightBackground = Color(
+    0xFFFFE5A0,
+  ); // Slightly darker for active
+  static const Color logoutColor = Colors.red;
+  static final Color iconColor = Colors.grey[600]!;
+
+  Map<String, bool> expandedSections = {
+    'Orders': false,
+    'My Products': false,
+    'Support': false,
+    'Settings': false,
+  };
+
+  Widget _buildBadge(int count) {
+    return Container(
+      margin: const EdgeInsets.only(left: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: highlightColor,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Text(
+        '$count',
+        style: const TextStyle(
+          fontSize: 10,
+          color: Colors.white,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
     );
   }
 
@@ -37,23 +51,69 @@ class VendorDrawer extends StatelessWidget {
     IconData icon, {
     int badgeCount = 0,
   }) {
-    final isActive = activeRoute == route;
-    return ListTile(
-      leading: _buildBadge(
-        Icon(icon, color: isActive ? Colors.blue : Colors.black),
-        badgeCount,
+    final isActive = widget.activeRoute == route;
+    final Color currentColor = isActive ? logoutColor : Colors.black;
+
+    return Container(
+      decoration:
+          isActive
+              ? BoxDecoration(
+                color: highlightBackground,
+                borderRadius: BorderRadius.circular(5),
+              )
+              : null,
+      child: ListTile(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5)),
+        leading: Icon(icon, color: currentColor, size: 20),
+        title: Text(
+          title,
+          style: TextStyle(
+            color: currentColor,
+            fontWeight: FontWeight.w500,
+            fontSize: 13,
+          ),
+        ),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (badgeCount > 0) _buildBadge(badgeCount),
+            const Icon(Icons.chevron_right, color: Colors.grey, size: 18),
+          ],
+        ),
+        onTap: () {
+          context.pop();
+          context.go(route);
+        },
       ),
+    );
+  }
+
+  Widget _drawerSection(String title, {IconData? icon}) {
+    final hasSubmenu = expandedSections.containsKey(title);
+    final isExpanded = expandedSections[title] ?? false;
+
+    return ListTile(
       title: Text(
         title,
-        style: TextStyle(
-          color: isActive ? Colors.blue : Colors.black,
-          fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
+        style: const TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.bold,
+          color: Colors.black54,
         ),
       ),
-      onTap: () {
-        context.pop(); // close the drawer
-        context.go(route);
-      },
+      trailing:
+          hasSubmenu
+              ? Icon(
+                isExpanded ? Icons.expand_less : Icons.expand_more,
+                size: 20,
+              )
+              : null,
+      onTap:
+          hasSubmenu
+              ? () => setState(() {
+                expandedSections[title] = !isExpanded;
+              })
+              : null,
     );
   }
 
@@ -61,69 +121,173 @@ class VendorDrawer extends StatelessWidget {
   Widget build(BuildContext context) {
     return Drawer(
       child: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: Column(
           children: [
             const SizedBox(height: 16),
-            // Profile Header
-            Row(
-              children: const [
-                CircleAvatar(
-                  radius: 28,
-                  backgroundImage:
-                      AssetImage('assets/images/vendor_avatar.jpg'),
-                ),
-                SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('MarketFlow Inc.',
-                          style: TextStyle(fontWeight: FontWeight.bold)),
-                      Text('support@marketflow.com',
-                          style: TextStyle(fontSize: 12, color: Colors.grey)),
-                    ],
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Row(
+                children: const [
+                  CircleAvatar(
+                    radius: 28,
+                    backgroundImage: AssetImage(
+                      'assets/images/vendor_avatar.jpg',
+                    ),
                   ),
-                ),
-              ],
+                  SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'MarketFlow Inc.',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                        ),
+                        SizedBox(height: 2),
+                        Text(
+                          'support@marketflow.com',
+                          style: TextStyle(fontSize: 13, color: Colors.black54),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 32),
+            const Divider(height: 1),
+            Expanded(
+              child: ListView(
+                padding: EdgeInsets.zero,
+                children: [
+                  _drawerSection('Dashboard'),
+                  _drawerItem(context, 'Dashboard', '/home', Icons.dashboard),
 
-            // Main Navigation Items
-            _drawerItem(
-                context, 'Dashboard', '/dashboard/home', Icons.dashboard),
-            _drawerItem(context, 'Orders', '/dashboard/orders',
-                Icons.shopping_bag_outlined,
-                badgeCount: 7),
-            _drawerItem(context, 'My Products', '/dashboard/add-product',
-                Icons.add_box_outlined),
-            _drawerItem(
-                context, 'Reports', '/dashboard/reports', Icons.bar_chart),
-            _drawerItem(
-                context, 'Profile', '/dashboard/profile', Icons.person_outline),
+                  _drawerSection('Orders'),
+                  if (expandedSections['Orders'] == true) ...[
+                    _drawerItem(
+                      context,
+                      'Order Management',
+                      '/orders/management',
+                      Icons.list_alt,
+                    ),
+                    _drawerItem(
+                      context,
+                      'Order Track',
+                      '/orders/track',
+                      Icons.track_changes,
+                    ),
+                    _drawerItem(
+                      context,
+                      'Sales Revenue',
+                      '/orders/sales-revenue',
+                      Icons.pie_chart,
+                    ),
+                  ],
 
-            const Divider(height: 32),
+                  _drawerSection('My Products'),
+                  if (expandedSections['My Products'] == true) ...[
+                    _drawerItem(
+                      context,
+                      'Commission Summary',
+                      '/products/commission-summary',
+                      Icons.monetization_on,
+                    ),
+                    _drawerItem(
+                      context,
+                      'Top Products',
+                      '/products/top',
+                      Icons.star_outline,
+                    ),
+                    _drawerItem(
+                      context,
+                      'Product Management',
+                      '/products/management',
+                      Icons.widgets,
+                    ),
+                    _drawerItem(
+                      context,
+                      'Product Inventory',
+                      '/products/inventory',
+                      Icons.inventory,
+                    ),
+                  ],
 
-            // Optional Items
-            _drawerItem(context, 'Messages', '/dashboard/messages',
-                Icons.message_outlined,
-                badgeCount: 3),
-            _drawerItem(context, 'Notifications', '/dashboard/notifications',
-                Icons.notifications_none,
-                badgeCount: 12),
-            _drawerItem(
-                context, 'Settings', '/dashboard/settings', Icons.settings),
+                  _drawerSection('Messages'),
+                  _drawerItem(
+                    context,
+                    'Message List',
+                    '/messages/list',
+                    Icons.message,
+                  ),
 
-            const SizedBox(height: 20),
+                  _drawerSection('Notifications'),
+                  _drawerItem(
+                    context,
+                    'Notifications',
+                    '/notifications',
+                    Icons.notifications,
+                  ),
 
+                  _drawerSection('Support'),
+                  if (expandedSections['Support'] == true) ...[
+                    _drawerItem(
+                      context,
+                      'Ticket Management',
+                      '/support/tickets',
+                      Icons.support_agent,
+                    ),
+                    _drawerItem(
+                      context,
+                      'Ticket Submission',
+                      '/support/submit',
+                      Icons.edit_note,
+                    ),
+                  ],
+
+                  _drawerSection('Reports'),
+                  _drawerItem(context, 'Reports', '/reports', Icons.bar_chart),
+
+                  _drawerSection('Profile'),
+                  _drawerItem(context, 'Profile', '/profile', Icons.person),
+
+                  _drawerSection('Settings'),
+                  if (expandedSections['Settings'] == true) ...[
+                    _drawerItem(
+                      context,
+                      'Settings',
+                      '/settings',
+                      Icons.settings,
+                    ),
+                    _drawerItem(
+                      context,
+                      'Data Privacy',
+                      '/settings/data-privacy',
+                      Icons.privacy_tip,
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            const SizedBox(height: 15),
+            const Divider(height: 1),
             ListTile(
-              leading: const Icon(Icons.logout, color: Colors.red),
-              title: const Text('Logout', style: TextStyle(color: Colors.red)),
+              leading: const Icon(Icons.logout, color: logoutColor),
+              title: const Text(
+                'Logout',
+                style: TextStyle(
+                  color: logoutColor,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
               onTap: () {
                 Navigator.pop(context);
-                // 🔐 Add logout logic here (Supabase signOut etc.)
               },
             ),
+            const SizedBox(height: 12),
           ],
         ),
       ),

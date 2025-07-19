@@ -34,7 +34,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     try {
       final response = await http.post(
         Uri.parse(
-            'https://vendor-admin-portal.netlify.app/api/forgot-password'), // adjust to your API base URL if needed
+          'https://vendor-admin-portal.netlify.app/api/forgot-password',
+        ), // adjust to your API base URL if needed
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'email': email}),
       );
@@ -44,21 +45,22 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
         showDialog(
           context: context,
-          builder: (_) => AlertDialog(
-            title: const Text("Success ✅"),
-            content: const Text(
-              "Reset link sent to your email. Please check your inbox and login again.",
-            ),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(context); // close dialog
-                  Navigator.pop(context); // back to login screen
-                },
-                child: const Text("Back to Login"),
+          builder:
+              (_) => AlertDialog(
+                title: const Text("Success ✅"),
+                content: const Text(
+                  "Reset link sent to your email. Please check your inbox and login again.",
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () {
+                      Navigator.pop(context); // close dialog
+                      Navigator.pop(context); // back to login screen
+                    },
+                    child: const Text("Back to Login"),
+                  ),
+                ],
               ),
-            ],
-          ),
         );
       } else {
         final data = jsonDecode(response.body);
@@ -74,16 +76,17 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   void _showError(String message) {
     showDialog(
       context: context,
-      builder: (_) => AlertDialog(
-        title: const Text("Error ❌"),
-        content: Text(message),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("OK"),
+      builder:
+          (_) => AlertDialog(
+            title: const Text("Error ❌"),
+            content: Text(message),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text("OK"),
+              ),
+            ],
           ),
-        ],
-      ),
     );
   }
 
@@ -108,7 +111,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
               controller: _emailController,
               keyboardType: TextInputType.emailAddress,
               decoration: InputDecoration(
-                prefixIcon: const Icon(Icons.email_outlined),
                 hintText: "your.email@example.com",
                 filled: true,
                 fillColor: Colors.white,
@@ -126,9 +128,10 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.pink,
                 ),
-                child: isLoading
-                    ? const CircularProgressIndicator(color: Colors.white)
-                    : const Text("Send Reset Link"),
+                child:
+                    isLoading
+                        ? const CircularProgressIndicator(color: Colors.white)
+                        : const Text("Send Reset Link"),
               ),
             ),
             const Spacer(),
@@ -140,7 +143,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                   style: TextStyle(color: Colors.black54),
                 ),
               ),
-            )
+            ),
           ],
         ),
       ),

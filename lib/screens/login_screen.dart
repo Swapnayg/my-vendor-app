@@ -5,7 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../theme/colors.dart';
 import 'forgot_password_screen.dart';
-import 'dashboard_screen.dart';
+import 'package:go_router/go_router.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
@@ -89,7 +89,6 @@ class _LoginScreenState extends State<LoginScreen> {
     final password = _passwordController.text;
 
     setState(() => isLoading = true);
-
     try {
       final response = await Supabase.instance.client.auth.signInWithPassword(
         email: email,
@@ -97,34 +96,35 @@ class _LoginScreenState extends State<LoginScreen> {
       );
 
       final user = response.user;
-
       if (user != null) {
-        // ✅ Call verify-user API
+        // ✅ Supabase login success
+
         final uri = Uri.parse(
-            'https://vendor-admin-portal.netlify.app/api/auth/verify-user');
+          'https://vendor-admin-portal.netlify.app/api/auth/verify-user',
+        );
         final verifyRes = await http.post(
           uri,
           headers: {'Content-Type': 'application/json'},
-          body: jsonEncode({
-            'email': email,
-            'password': password,
-          }),
+          body: jsonEncode({'email': email, 'password': password}),
         );
 
         if (verifyRes.statusCode == 200) {
           final data = jsonDecode(verifyRes.body);
           final user = data['user'];
+
           final prefs = await SharedPreferences.getInstance();
           await prefs.setString('email', email);
-          await prefs.setString(
-              'userId', user['id'].toString()); // 👈 convert to String
+          await prefs.setString('userId', user['id'].toString());
           await prefs.setString('role', user['role']);
 
           if (rememberMe) {
             await prefs.setString('password', password);
           }
 
-          _showMessage('Login successful!', isSuccess: true);
+          _showMessage(
+            'Login successful!',
+            isSuccess: true,
+          ); // ✅ Only called once
         } else {
           _showMessage('Login succeeded, but failed to fetch user details.');
         }
@@ -154,10 +154,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 if (isSuccess) {
                   _emailController.clear();
                   _passwordController.clear();
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(builder: (_) => const DashboardPage()),
-                  );
+                  context.go('/home');
                 }
               },
               child: const Text('OK'),
@@ -187,8 +184,11 @@ class _LoginScreenState extends State<LoginScreen> {
             Center(
               child: Column(
                 children: const [
-                  Icon(Icons.cloud_circle_rounded,
-                      size: 80, color: AppColors.primary),
+                  Icon(
+                    Icons.cloud_circle_rounded,
+                    size: 80,
+                    color: AppColors.primary,
+                  ),
                   SizedBox(height: 8),
                   Text('Your Business, Simplified.'),
                 ],
@@ -205,8 +205,9 @@ class _LoginScreenState extends State<LoginScreen> {
                 filled: true,
                 fillColor: Colors.white,
                 errorText: emailErrorText,
-                border:
-                    OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
               ),
             ),
             const SizedBox(height: 16),
@@ -220,8 +221,9 @@ class _LoginScreenState extends State<LoginScreen> {
                 filled: true,
                 fillColor: Colors.white,
                 errorText: passwordErrorText,
-                border:
-                    OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
               ),
             ),
             const SizedBox(height: 12),
@@ -240,7 +242,8 @@ class _LoginScreenState extends State<LoginScreen> {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                          builder: (_) => const ForgotPasswordScreen()),
+                        builder: (_) => const ForgotPasswordScreen(),
+                      ),
                     );
                   },
                   child: const Text(
@@ -253,9 +256,19 @@ class _LoginScreenState extends State<LoginScreen> {
             const SizedBox(height: 24),
             ElevatedButton(
               onPressed: isLoading ? null : _login,
-              child: isLoading
-                  ? const CircularProgressIndicator(color: Colors.white)
-                  : const Text("Log In Securely"),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary, // Orchid
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                textStyle: const TextStyle(fontWeight: FontWeight.bold),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+              child:
+                  isLoading
+                      ? const CircularProgressIndicator(color: Colors.white)
+                      : const Text("Log In Securely"),
             ),
           ],
         ),
