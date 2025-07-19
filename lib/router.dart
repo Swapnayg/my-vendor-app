@@ -34,7 +34,6 @@ final GoRouter router = GoRouter(
 
     // Main App Pages (each with CommonLayout inside them)
     GoRoute(path: '/home', builder: (context, state) => const HomePage()),
-    GoRoute(path: '/orders', builder: (context, state) => const OrdersPage()),
     GoRoute(
       path: '/add-product',
       builder: (context, state) => const AddProductPage(),
