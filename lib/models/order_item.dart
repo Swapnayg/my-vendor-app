@@ -1,49 +1,61 @@
 class OrderItem {
   final int id;
-  final String productId;
+  final int orderId;
+  final int productId;
   final int quantity;
   final double basePrice;
   final double taxRate;
   final double taxAmount;
   final double price;
-  late String name;
-  late String status;
-  late String date;
-  late String initials;
-  late String orderId;
-  late String amount;
+  final double? commissionPct;
+  final double? commissionAmt;
 
   OrderItem({
     required this.id,
+    required this.orderId,
     required this.productId,
     required this.quantity,
     required this.basePrice,
     required this.taxRate,
     required this.taxAmount,
     required this.price,
-    required String initials,
-    required String amount,
-    required String orderId,
-    required String name,
-    required String status,
-    required String date,
+    this.commissionPct,
+    this.commissionAmt,
   });
 
   factory OrderItem.fromJson(Map<String, dynamic> json) {
     return OrderItem(
       id: json['id'],
+      orderId: json['orderId'],
       productId: json['productId'],
       quantity: json['quantity'],
-      basePrice: json['basePrice'].toDouble(),
-      taxRate: json['taxRate'].toDouble(),
-      taxAmount: json['taxAmount'].toDouble(),
-      price: json['price'].toDouble(),
-      initials: '',
-      amount: '',
-      orderId: '',
-      name: '',
-      status: '',
-      date: '',
+      basePrice: (json['basePrice'] as num).toDouble(),
+      taxRate: (json['taxRate'] as num).toDouble(),
+      taxAmount: (json['taxAmount'] as num).toDouble(),
+      price: (json['price'] as num).toDouble(),
+      commissionPct:
+          json['commissionPct'] != null
+              ? (json['commissionPct'] as num).toDouble()
+              : null,
+      commissionAmt:
+          json['commissionAmt'] != null
+              ? (json['commissionAmt'] as num).toDouble()
+              : null,
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'orderId': orderId,
+      'productId': productId,
+      'quantity': quantity,
+      'basePrice': basePrice,
+      'taxRate': taxRate,
+      'taxAmount': taxAmount,
+      'price': price,
+      'commissionPct': commissionPct,
+      'commissionAmt': commissionAmt,
+    };
   }
 }

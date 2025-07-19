@@ -1,10 +1,12 @@
+enum VendorStatus { PENDING, APPROVED, REJECTED, SUSPENDED }
+
 class Vendor {
   final int id;
   final String businessName;
   final String phone;
   final String address;
   final String? gstNumber;
-  final String status;
+  final VendorStatus status;
 
   Vendor({
     required this.id,
@@ -22,7 +24,21 @@ class Vendor {
       phone: json['phone'],
       address: json['address'],
       gstNumber: json['gstNumber'],
-      status: json['status'],
+      status: VendorStatus.values.firstWhere(
+        (e) => e.name == json['status'],
+        orElse: () => VendorStatus.PENDING,
+      ),
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'businessName': businessName,
+      'phone': phone,
+      'address': address,
+      'gstNumber': gstNumber,
+      'status': status.name,
+    };
   }
 }

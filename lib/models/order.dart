@@ -1,27 +1,44 @@
-import 'package:my_vendor_app/models/order_item.dart';
-import 'package:my_vendor_app/models/order_tracking.dart';
-import 'package:my_vendor_app/models/payment.dart';
+import 'dart:convert';
+import 'order_item.dart';
+import 'payment.dart';
+
+enum OrderStatus { PENDING, SHIPPED, DELIVERED, RETURNED, CANCELLED }
+
+OrderStatus orderStatusFromString(String status) {
+  return OrderStatus.values.firstWhere(
+    (e) => e.toString().split('.').last.toUpperCase() == status.toUpperCase(),
+    orElse: () => OrderStatus.PENDING,
+  );
+}
+
+String orderStatusToString(OrderStatus status) {
+  return status.toString().split('.').last;
+}
 
 class Order {
   final int id;
   final int customerId;
   final int vendorId;
-  final String status;
+  final Map<String, dynamic>? shippingSnapshot;
+  final OrderStatus status;
+
   final double subTotal;
   final double taxTotal;
   final double shippingCharge;
   final double? shippingTax;
   final double? discount;
   final double total;
+
   final DateTime createdAt;
+
   final List<OrderItem>? items;
   final Payment? payment;
-  final List<OrderTracking>? tracking;
 
   Order({
     required this.id,
     required this.customerId,
     required this.vendorId,
+    this.shippingSnapshot,
     required this.status,
     required this.subTotal,
     required this.taxTotal,
@@ -32,7 +49,6 @@ class Order {
     required this.createdAt,
     this.items,
     this.payment,
-    this.tracking,
   });
 
   factory Order.fromJson(Map<String, dynamic> json) {
@@ -40,28 +56,52 @@ class Order {
       id: json['id'],
       customerId: json['customerId'],
       vendorId: json['vendorId'],
-      status: json['status'],
-      subTotal: json['subTotal'].toDouble(),
-      taxTotal: json['taxTotal'].toDouble(),
-      shippingCharge: json['shippingCharge'].toDouble(),
-      shippingTax: json['shippingTax']?.toDouble(),
-      discount: json['discount']?.toDouble(),
-      total: json['total'].toDouble(),
+      shippingSnapshot:
+          json['shippingSnapshot'] != null
+              ? jsonDecode(json['shippingSnapshot'])
+              : null,
+      status: orderStatusFromString(json['status']),
+      subTotal: (json['subTotal'] as num).toDouble(),
+      taxTotal: (json['taxTotal'] as num).toDouble(),
+      shippingCharge: (json['shippingCharge'] as num).toDouble(),
+      shippingTax:
+          json['shippingTax'] != null
+              ? (json['shippingTax'] as num).toDouble()
+              : null,
+      discount:
+          json['discount'] != null
+              ? (json['discount'] as num).toDouble()
+              : null,
+      total: (json['total'] as num).toDouble(),
       createdAt: DateTime.parse(json['createdAt']),
       items:
           json['items'] != null
-              ? (json['items'] as List)
-                  .map((e) => OrderItem.fromJson(e))
-                  .toList()
+              ? List<OrderItem>.from(
+                json['items'].map((x) => OrderItem.fromJson(x)),
+              )
               : null,
       payment:
           json['payment'] != null ? Payment.fromJson(json['payment']) : null,
-      tracking:
-          json['trackingEvents'] != null
-              ? (json['trackingEvents'] as List)
-                  .map((e) => OrderTracking.fromJson(e))
-                  .toList()
-              : null,
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'customerId': customerId,
+      'vendorId': vendorId,
+      'shippingSnapshot':
+          shippingSnapshot != null ? jsonEncode(shippingSnapshot) : null,
+      'status': orderStatusToString(status),
+      'subTotal': subTotal,
+      'taxTotal': taxTotal,
+      'shippingCharge': shippingCharge,
+      'shippingTax': shippingTax,
+      'discount': discount,
+      'total': total,
+      'createdAt': createdAt.toIso8601String(),
+      'items': items?.map((x) => x.toJson()).toList(),
+      'payment': payment?.toJson(),
+    };
   }
 }

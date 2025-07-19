@@ -85,13 +85,14 @@ class HomePage extends StatelessWidget {
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 12),
+
             ...latestOrders.map((o) {
               try {
                 return _orderTile(
                   o.initials,
                   o.orderId,
                   o.customerName,
-                  o.amount as String,
+                  o.amount.toStringAsFixed(2), // ✅ Proper conversion
                   o.status,
                   o.date,
                 );
@@ -124,7 +125,7 @@ class HomePage extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(icon.icon, color: AppColors.primary),
+              Icon(icon.icon, color: Colors.blue),
               const SizedBox(height: 8),
               Text(label, style: const TextStyle(color: Colors.black54)),
               const SizedBox(height: 4),
@@ -154,24 +155,58 @@ class HomePage extends StatelessWidget {
     print('🔵 Rendering Notification: title=$title, isNew=$isNew');
 
     try {
-      return ListTile(
-        contentPadding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
-        leading: CircleAvatar(
-          backgroundColor: AppColors.primary.withOpacity(0.1),
-          child: Icon(icon.icon, color: AppColors.primary),
-        ),
-        title: Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
-        subtitle: Text(subtitle),
-        trailing: Column(
-          crossAxisAlignment: CrossAxisAlignment.end,
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 12.0),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(time, style: const TextStyle(fontSize: 12)),
-            if (isNew)
-              const Chip(
-                label: Text("New"),
-                backgroundColor: Colors.orange,
-                visualDensity: VisualDensity.compact,
+            CircleAvatar(
+              backgroundColor: Colors.blue.withOpacity(0.1),
+              child: Icon(icon.icon, color: Colors.blue),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(subtitle),
+                ],
               ),
+            ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(time, style: const TextStyle(fontSize: 12)),
+                if (isNew)
+                  const Padding(
+                    padding: EdgeInsets.only(top: 4),
+                    child: Chip(
+                      label: Text(
+                        "New",
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white, // ✅ White bold text
+                        ),
+                      ),
+                      backgroundColor: Colors.orange, // ✅ Background color
+                      elevation: 0, // ✅ No shadow
+                      shadowColor: Colors.transparent, // ✅ No shadow color
+                      visualDensity: VisualDensity.compact,
+                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      padding: EdgeInsets.symmetric(horizontal: 4),
+                      shape: StadiumBorder(
+                        side: BorderSide.none, // ✅ No border
+                      ),
+                    ),
+                  ),
+              ],
+            ),
           ],
         ),
       );
@@ -191,22 +226,57 @@ class HomePage extends StatelessWidget {
   ) {
     print('🟢 Rendering OrderTile: orderId=$orderId, status=$status');
 
-    return ListTile(
-      contentPadding: const EdgeInsets.symmetric(vertical: 4),
-      leading: CircleAvatar(child: Text(initials)),
-      title: Text(orderId),
-      subtitle: Text(name),
-      trailing: Column(
-        crossAxisAlignment: CrossAxisAlignment.end,
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(amount, style: const TextStyle(fontWeight: FontWeight.bold)),
-          Text(
-            status,
-            style: const TextStyle(fontSize: 12, color: Colors.black54),
+          CircleAvatar(
+            backgroundColor: AppColors.pink, // Light pink
+            child: Text(
+              initials,
+              style: const TextStyle(
+                color: Colors.white,
+              ), // optional for contrast
+            ),
           ),
-          Text(
-            date,
-            style: const TextStyle(fontSize: 11, color: Colors.black38),
+
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  orderId,
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+                Text(name, style: const TextStyle(color: Colors.black87)),
+              ],
+            ),
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                amount,
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color:
+                      AppColors
+                          .primary, // ✅ Use your brand color or AppColors.primary
+                  fontSize: 16,
+                ),
+              ),
+
+              Text(
+                status,
+                style: const TextStyle(fontSize: 12, color: Colors.black54),
+              ),
+              Text(
+                date,
+                style: const TextStyle(fontSize: 11, color: Colors.black38),
+              ),
+            ],
           ),
         ],
       ),

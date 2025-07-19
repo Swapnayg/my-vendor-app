@@ -1,15 +1,13 @@
 import '../models/order.dart';
 import '../models/order_item.dart';
-import '../models/customer.dart';
 import '../models/payment.dart';
-import '../models/order_tracking.dart';
 
 final dummyOrders = [
   Order(
     id: 1001,
     customerId: 1,
     vendorId: 1,
-    status: 'Pending',
+    status: OrderStatus.PENDING,
     subTotal: 200,
     taxTotal: 36,
     shippingCharge: 10,
@@ -20,34 +18,32 @@ final dummyOrders = [
     items: [
       OrderItem(
         id: 1,
-        productId: "101",
+        orderId: 1001,
+        productId: 101,
         quantity: 2,
         basePrice: 100,
         taxRate: 18,
         taxAmount: 36,
         price: 236,
-        initials: "AB",
-        amount: "236",
-        orderId: "1001",
-        name: "Product Name",
-        status: "Pending",
-        date:
-            DateTime.now().subtract(const Duration(days: 1)).toIso8601String(),
+        commissionPct: 10,
+        commissionAmt: 23.6,
       ),
     ],
+
     payment: Payment(
       id: 1,
       amount: 247.8,
       method: 'Credit Card',
-      status: 'Paid',
+      status: PaymentStatus.PAID,
       createdAt: DateTime.now().subtract(const Duration(days: 1)),
+      orderId: 1001,
     ),
   ),
   Order(
     id: 1002,
     customerId: 2,
     vendorId: 1,
-    status: 'Delivered',
+    status: OrderStatus.DELIVERED,
     subTotal: 150,
     taxTotal: 27,
     shippingCharge: 5,
@@ -55,5 +51,27 @@ final dummyOrders = [
     discount: 10,
     total: 172.9,
     createdAt: DateTime.now().subtract(const Duration(days: 3)),
+    items: [
+      OrderItem(
+        id: 1,
+        orderId: 1001,
+        productId: 101,
+        quantity: 2,
+        basePrice: 100,
+        taxRate: 18,
+        taxAmount: 36,
+        price: 236,
+        commissionPct: 10,
+        commissionAmt: 23.6,
+      ),
+    ],
+    payment: Payment(
+      id: 2,
+      amount: 172.9,
+      method: 'UPI',
+      status: PaymentStatus.REFUNDED,
+      orderId: 1002,
+      createdAt: DateTime.now().subtract(const Duration(days: 3)),
+    ),
   ),
 ];

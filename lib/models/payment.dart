@@ -1,25 +1,44 @@
+enum PaymentStatus { PAID, REFUNDED, FAILED }
+
 class Payment {
   final int id;
+  final int orderId;
   final double amount;
+  final PaymentStatus status;
   final String method;
-  final String status;
   final DateTime createdAt;
 
   Payment({
     required this.id,
+    required this.orderId,
     required this.amount,
-    required this.method,
     required this.status,
+    required this.method,
     required this.createdAt,
   });
 
   factory Payment.fromJson(Map<String, dynamic> json) {
     return Payment(
       id: json['id'],
-      amount: json['amount'].toDouble(),
+      orderId: json['orderId'],
+      amount: (json['amount'] as num).toDouble(),
+      status: PaymentStatus.values.firstWhere(
+        (e) => e.toString().split('.').last == json['status'],
+        orElse: () => PaymentStatus.PAID,
+      ),
       method: json['method'],
-      status: json['status'],
       createdAt: DateTime.parse(json['createdAt']),
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'orderId': orderId,
+      'amount': amount,
+      'status': status.toString().split('.').last,
+      'method': method,
+      'createdAt': createdAt.toIso8601String(),
+    };
   }
 }

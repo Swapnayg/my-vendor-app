@@ -91,7 +91,7 @@ class OrderManagementPage extends StatelessWidget {
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Text(
-                order.status,
+                order.status as String,
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
