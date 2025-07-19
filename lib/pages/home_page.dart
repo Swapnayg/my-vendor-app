@@ -62,31 +62,49 @@ class HomePage extends StatelessWidget {
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 12),
-            ...recentNotifications.map(
-              (n) => _notificationTile(
-                n.iconName,
-                n.title,
-                n.message,
-                n.time,
-                isNew: n.isNew,
-              ),
-            ),
+            ...recentNotifications.map((n) {
+              try {
+                return _notificationTile(
+                  n.iconName,
+                  n.title,
+                  n.message,
+                  n.time,
+                  isNew: n.isNew,
+                );
+              } catch (e) {
+                print("❌ Error mapping notification: $e");
+                return const ListTile(
+                  title: Text("Error loading notification"),
+                );
+              }
+            }),
+
             const SizedBox(height: 24),
             const Text(
               "Latest Orders",
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 12),
-            ...latestOrders.map(
-              (o) => _orderTile(
-                o.initials,
-                o.orderId,
-                o.customerName,
-                o.amount as String,
-                o.status,
-                o.date,
-              ),
-            ),
+            ...latestOrders.map((o) {
+              try {
+                return _orderTile(
+                  o.initials,
+                  o.orderId,
+                  o.customerName,
+                  o.amount as String,
+                  o.status,
+                  o.date,
+                );
+              } catch (e, stackTrace) {
+                print('❌ Error rendering order ${o.orderId}: $e');
+                print(stackTrace);
+                return const ListTile(
+                  title: Text("⚠️ Error loading order"),
+                  subtitle: Text("This order could not be displayed."),
+                );
+              }
+            }),
+
             const SizedBox(height: 50),
           ],
         ),
