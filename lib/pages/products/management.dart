@@ -1,15 +1,372 @@
 import 'package:flutter/material.dart';
 import '/common/common_layout.dart';
+import '/models/product.dart';
+import '/theme/colors.dart';
+import '/data/mock_products.dart';
+import 'package:go_router/go_router.dart';
 
-class InventoryManagementPage extends StatelessWidget {
-  const InventoryManagementPage({super.key});
+class ProductManagementPage extends StatefulWidget {
+  const ProductManagementPage({super.key});
+
+  @override
+  State<ProductManagementPage> createState() => _ProductManagementPageState();
+}
+
+class _ProductManagementPageState extends State<ProductManagementPage> {
+  List<Product> allProducts = mockProducts;
+  List<Product> displayedProducts = [];
+  String selectedCategory = 'All';
+  String selectedStatus = 'All';
+  String searchQuery = '';
+  int itemsToShow = 10;
+
+  final scrollController = ScrollController();
+
+  @override
+  void initState() {
+    super.initState();
+    _filterProducts();
+    scrollController.addListener(() {
+      if (scrollController.position.pixels ==
+          scrollController.position.maxScrollExtent) {
+        _loadMore();
+      }
+    });
+  }
+
+  void _loadMore() {
+    setState(() {
+      itemsToShow += 10;
+      _filterProducts();
+    });
+  }
+
+  void _filterProducts() {
+    setState(() {
+      displayedProducts =
+          allProducts
+              .where((product) {
+                final matchesSearch = product.name.toLowerCase().contains(
+                  searchQuery.toLowerCase(),
+                );
+                final matchesCategory =
+                    selectedCategory == 'All' ||
+                    product.category?.name == selectedCategory;
+                final matchesStatus =
+                    selectedStatus == 'All' ||
+                    product.status.name == selectedStatus.toLowerCase();
+                return matchesSearch && matchesCategory && matchesStatus;
+              })
+              .take(itemsToShow)
+              .toList();
+    });
+  }
+
+  void _deleteProduct(Product product) {
+    setState(() {
+      allProducts.remove(product);
+      _filterProducts();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
-    return const CommonLayout(
-      body: Center(
-        child: Text('Product Management Page', style: TextStyle(fontSize: 24)),
+    return CommonLayout(
+      body: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            Wrap(
+              spacing: 12,
+              runSpacing: 12,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                SizedBox(
+                  width: 250,
+                  child: TextField(
+                    onChanged: (value) {
+                      searchQuery = value;
+                      _filterProducts();
+                    },
+                    decoration: InputDecoration(
+                      hintText: "Search Products...",
+                      prefixIcon: const Icon(Icons.search),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: Colors.grey.shade400),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: Colors.grey.shade400),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(
+                          color: AppColors.primary.withOpacity(0.8),
+                          width: 1.5,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                DropdownButton<String>(
+                  value: selectedCategory,
+                  items:
+                      ['All', 'Electronics', 'Clothing', 'Food']
+                          .map(
+                            (e) => DropdownMenuItem(value: e, child: Text(e)),
+                          )
+                          .toList(),
+                  onChanged: (value) {
+                    selectedCategory = value!;
+                    _filterProducts();
+                  },
+                ),
+                DropdownButton<String>(
+                  value: selectedStatus,
+                  items:
+                      ['All', 'Pending', 'Approved', 'Rejected', 'Suspended']
+                          .map(
+                            (e) => DropdownMenuItem(value: e, child: Text(e)),
+                          )
+                          .toList(),
+                  onChanged: (value) {
+                    selectedStatus = value!;
+                    _filterProducts();
+                  },
+                ),
+                ElevatedButton.icon(
+                  onPressed: () {
+                    context.go('/add-product');
+                  },
+                  icon: const Icon(Icons.add),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.pink,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                  label: const Text("Add Product"),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+            Expanded(
+              child: LayoutBuilder(
+                builder:
+                    (context, constraints) => ListView.builder(
+                      controller: scrollController,
+                      itemCount: displayedProducts.length,
+                      itemBuilder: (context, index) {
+                        final product = displayedProducts[index];
+                        return Card(
+                          elevation: 2,
+                          margin: const EdgeInsets.symmetric(vertical: 8),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.all(12),
+                            child: Flex(
+                              direction:
+                                  constraints.maxWidth > 600
+                                      ? Axis.horizontal
+                                      : Axis.vertical,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Row(
+                                  children: [
+                                    ClipRRect(
+                                      borderRadius: BorderRadius.circular(8),
+                                      child:
+                                          product.images.isNotEmpty
+                                              ? Image.network(
+                                                product.images.first.url,
+                                                width: 60,
+                                                height: 60,
+                                                fit: BoxFit.cover,
+                                              )
+                                              : Container(
+                                                width: 60,
+                                                height: 60,
+                                                color: Colors.grey.shade200,
+                                                child: const Icon(
+                                                  Icons.image_not_supported,
+                                                ),
+                                              ),
+                                    ),
+                                    const SizedBox(width: 16),
+                                    Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          product.name,
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 16,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          "Category: ${product.category?.name ?? 'N/A'}",
+                                        ),
+                                        Text(
+                                          "Vendor: ${product.vendor?.businessName ?? 'Unknown'}",
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 12),
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.end,
+                                  children: [
+                                    Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.end,
+                                      children: [
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 8,
+                                            vertical: 4,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: _getStatusColor(
+                                              product.status.name,
+                                            ).withOpacity(0.1),
+                                            borderRadius: BorderRadius.circular(
+                                              8,
+                                            ),
+                                          ),
+                                          child: Text(
+                                            product.status.name.toUpperCase(),
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              color: _getStatusColor(
+                                                product.status.name,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                        const SizedBox(height: 6),
+                                        Text(
+                                          "₹${product.price.toStringAsFixed(2)}",
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Row(
+                                      children: [
+                                        IconButton(
+                                          icon: const Icon(
+                                            Icons.visibility,
+                                            color: Colors.blue,
+                                          ),
+                                          tooltip: "View",
+                                          onPressed:
+                                              () => context.go(
+                                                '/view-product',
+                                                extra: product,
+                                              ),
+                                        ),
+                                        IconButton(
+                                          icon: const Icon(
+                                            Icons.edit,
+                                            color: Colors.orange,
+                                          ),
+                                          tooltip: "Edit",
+                                          onPressed:
+                                              () => context.go(
+                                                '/add-product',
+                                                extra: product,
+                                              ),
+                                        ),
+                                        IconButton(
+                                          icon: const Icon(
+                                            Icons.delete,
+                                            color: Colors.red,
+                                          ),
+                                          tooltip: "Delete",
+                                          onPressed:
+                                              () => showDialog(
+                                                context: context,
+                                                builder:
+                                                    (ctx) => AlertDialog(
+                                                      title: const Text(
+                                                        "Delete Product",
+                                                      ),
+                                                      content: const Text(
+                                                        "Are you sure you want to delete this product?",
+                                                      ),
+                                                      actions: [
+                                                        TextButton(
+                                                          onPressed:
+                                                              () =>
+                                                                  Navigator.pop(
+                                                                    ctx,
+                                                                  ),
+                                                          child: const Text(
+                                                            "Cancel",
+                                                          ),
+                                                        ),
+                                                        TextButton(
+                                                          onPressed: () {
+                                                            Navigator.pop(ctx);
+                                                            _deleteProduct(
+                                                              product,
+                                                            );
+                                                          },
+                                                          child: const Text(
+                                                            "Delete",
+                                                            style: TextStyle(
+                                                              color: Colors.red,
+                                                            ),
+                                                          ),
+                                                        ),
+                                                      ],
+                                                    ),
+                                              ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
+  }
+
+  Color _getStatusColor(String status) {
+    switch (status.toLowerCase()) {
+      case 'approved':
+        return Colors.green.shade700;
+      case 'pending':
+        return Colors.orange.shade700;
+      case 'rejected':
+        return Colors.red.shade700;
+      case 'suspended':
+        return Colors.grey.shade700;
+      default:
+        return Colors.black87;
+    }
   }
 }

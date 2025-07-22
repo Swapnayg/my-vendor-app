@@ -54,7 +54,7 @@ class CommonLayout extends StatelessWidget {
           SizedBox(width: 10),
           CircleAvatar(
             radius: 16,
-            backgroundImage: AssetImage('assets/images/profile.jpg'),
+            backgroundImage: AssetImage('assets/images/upload.png'),
           ),
           SizedBox(width: 12),
         ],

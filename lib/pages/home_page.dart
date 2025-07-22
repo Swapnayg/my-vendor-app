@@ -1,12 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:my_vendor_app/models/order_item.dart';
 import '../common/common_layout.dart';
 import '../theme/colors.dart';
-import '../models/dashboard_models.dart' as dashboard;
-import '../widgets/chart_widgets.dart'; // ⬅️ Chart Widgets
-import '../widgets/notification_widget.dart'; // Notification model if needed
-
-// Mock data imported
+import '../widgets/chart_widgets.dart';
 import '../data/overview_stats.dart';
 import '../data/recent_notifications.dart';
 import '../data/latest_orders.dart';
@@ -16,6 +11,10 @@ class HomePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isMobile = MediaQuery.of(context).size.width < 600;
+    final crossAxisCount = isMobile ? 2 : 4;
+    final itemWidth = (MediaQuery.of(context).size.width - 48) / crossAxisCount;
+
     return CommonLayout(
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -30,17 +29,18 @@ class HomePage extends StatelessWidget {
             Wrap(
               spacing: 12,
               runSpacing: 12,
-              children:
-                  overviewStats
-                      .map(
-                        (stat) => _overviewCard(
-                          stat.icon,
-                          stat.label,
-                          stat.value,
-                          stat.growth,
-                        ),
-                      )
-                      .toList(),
+              children: List.generate(overviewStats.length, (index) {
+                final stat = overviewStats[index];
+                final color = _cardColors[index % _cardColors.length];
+                return _overviewCard(
+                  stat.icon,
+                  stat.label,
+                  stat.value,
+                  stat.growth,
+                  color,
+                  width: itemWidth,
+                );
+              }),
             ),
 
             const SizedBox(height: 24),
@@ -92,7 +92,7 @@ class HomePage extends StatelessWidget {
                   o.initials,
                   o.orderId,
                   o.customerName,
-                  o.amount.toStringAsFixed(2), // ✅ Proper conversion
+                  o.amount.toStringAsFixed(2),
                   o.status,
                   o.date,
                 );
@@ -113,34 +113,49 @@ class HomePage extends StatelessWidget {
     );
   }
 
-  Widget _overviewCard(Icon icon, String label, String value, String growth) {
+  static final List<Color> _cardColors = [
+    AppColors.primary.withOpacity(0.1),
+    AppColors.pink.withOpacity(0.1),
+    AppColors.yellow.withOpacity(0.1),
+    AppColors.orange.withOpacity(0.1),
+    AppColors.green.withOpacity(0.1),
+  ];
+
+  Widget _overviewCard(
+    Icon icon,
+    String label,
+    String value,
+    String growth,
+    Color color, {
+    required double width,
+  }) {
     print('🟡 Building Overview Card: label=$label');
 
-    return SizedBox(
-      width: 160,
-      child: Card(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Icon(icon.icon, color: Colors.blue),
-              const SizedBox(height: 8),
-              Text(label, style: const TextStyle(color: Colors.black54)),
-              const SizedBox(height: 4),
-              Text(
-                value,
-                style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text("↑ $growth", style: const TextStyle(color: Colors.green)),
-            ],
+    return Container(
+      width: width,
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon.icon, color: Colors.black54),
+          const SizedBox(height: 8),
+          Text(label, style: const TextStyle(color: Colors.black54)),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: Colors.black87,
+            ),
           ),
-        ),
+          const SizedBox(height: 4),
+          Text("↑ $growth", style: const TextStyle(color: Colors.black54)),
+        ],
       ),
     );
   }
@@ -191,18 +206,16 @@ class HomePage extends StatelessWidget {
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.bold,
-                          color: Colors.white, // ✅ White bold text
+                          color: Colors.white,
                         ),
                       ),
-                      backgroundColor: Colors.orange, // ✅ Background color
-                      elevation: 0, // ✅ No shadow
-                      shadowColor: Colors.transparent, // ✅ No shadow color
+                      backgroundColor: Colors.orange,
+                      elevation: 0,
+                      shadowColor: Colors.transparent,
                       visualDensity: VisualDensity.compact,
                       materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       padding: EdgeInsets.symmetric(horizontal: 4),
-                      shape: StadiumBorder(
-                        side: BorderSide.none, // ✅ No border
-                      ),
+                      shape: StadiumBorder(side: BorderSide.none),
                     ),
                   ),
               ],
@@ -232,15 +245,9 @@ class HomePage extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           CircleAvatar(
-            backgroundColor: AppColors.pink, // Light pink
-            child: Text(
-              initials,
-              style: const TextStyle(
-                color: Colors.white,
-              ), // optional for contrast
-            ),
+            backgroundColor: const Color.fromARGB(255, 238, 31, 145),
+            child: Text(initials, style: const TextStyle(color: Colors.white)),
           ),
-
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -261,13 +268,10 @@ class HomePage extends StatelessWidget {
                 amount,
                 style: const TextStyle(
                   fontWeight: FontWeight.bold,
-                  color:
-                      AppColors
-                          .primary, // ✅ Use your brand color or AppColors.primary
+                  color: AppColors.primary,
                   fontSize: 16,
                 ),
               ),
-
               Text(
                 status,
                 style: const TextStyle(fontSize: 12, color: Colors.black54),

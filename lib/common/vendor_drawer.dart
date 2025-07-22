@@ -88,7 +88,7 @@ class _VendorDrawerState extends State<VendorDrawer> {
     );
   }
 
-  Widget _drawerSection(String title, {IconData? icon}) {
+  Widget _drawerSection(String title) {
     final hasSubmenu = expandedSections.containsKey(title);
     final isExpanded = expandedSections[title] ?? false;
 
@@ -130,9 +130,7 @@ class _VendorDrawerState extends State<VendorDrawer> {
                 children: const [
                   CircleAvatar(
                     radius: 28,
-                    backgroundImage: AssetImage(
-                      'assets/images/vendor_avatar.jpg',
-                    ),
+                    backgroundImage: AssetImage('assets/images/upload.png'),
                   ),
                   SizedBox(width: 12),
                   Expanded(
@@ -176,8 +174,8 @@ class _VendorDrawerState extends State<VendorDrawer> {
                     ),
                     _drawerItem(
                       context,
-                      'Order Track',
-                      '/orders/track',
+                      'Recent Orders',
+                      '/orders/latest-orders',
                       Icons.track_changes,
                     ),
                     _drawerItem(
@@ -190,12 +188,12 @@ class _VendorDrawerState extends State<VendorDrawer> {
 
                   _drawerSection('My Products'),
                   if (expandedSections['My Products'] == true) ...[
-                    _drawerItem(
-                      context,
-                      'Add New Product',
-                      '/add-product',
-                      Icons.add_box,
-                    ),
+                    // _drawerItem(
+                    //   context,
+                    //   'Add New Product',
+                    //   '/add-product',
+                    //   Icons.add_box,
+                    // ),
                     _drawerItem(
                       context,
                       'Product Management',

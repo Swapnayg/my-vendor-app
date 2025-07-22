@@ -1,3 +1,5 @@
+import 'product.dart'; // Make sure this import points to your actual Product model
+
 class OrderItem {
   final int id;
   final int orderId;
@@ -9,6 +11,7 @@ class OrderItem {
   final double price;
   final double? commissionPct;
   final double? commissionAmt;
+  final Product? product; // Included product details
 
   OrderItem({
     required this.id,
@@ -21,6 +24,7 @@ class OrderItem {
     required this.price,
     this.commissionPct,
     this.commissionAmt,
+    this.product,
   });
 
   factory OrderItem.fromJson(Map<String, dynamic> json) {
@@ -41,6 +45,8 @@ class OrderItem {
           json['commissionAmt'] != null
               ? (json['commissionAmt'] as num).toDouble()
               : null,
+      product:
+          json['product'] != null ? Product.fromJson(json['product']) : null,
     );
   }
 
@@ -56,6 +62,7 @@ class OrderItem {
       'price': price,
       'commissionPct': commissionPct,
       'commissionAmt': commissionAmt,
+      'product': product?.toJson(),
     };
   }
 }

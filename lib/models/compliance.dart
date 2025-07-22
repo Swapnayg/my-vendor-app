@@ -1,35 +1,27 @@
 class Compliance {
   final int id;
-  final int productId;
-  final String? fssaiNumber;
-  final String? gstNumber;
-  final String? hsnCode;
-  final String? foodType; // veg, non-veg, vegan, etc.
+  int productId;
+  String? type; // veg, non-veg, vegan, etc.
+  String? documentUrl; // New field for compliance document
 
   Compliance({
     required this.id,
     required this.productId,
-    this.fssaiNumber,
-    this.gstNumber,
-    this.hsnCode,
-    this.foodType,
+    this.type,
+    this.documentUrl,
   });
 
   factory Compliance.fromJson(Map<String, dynamic> json) => Compliance(
     id: json['id'],
     productId: json['productId'],
-    fssaiNumber: json['fssaiNumber'],
-    gstNumber: json['gstNumber'],
-    hsnCode: json['hsnCode'],
-    foodType: json['foodType'],
+    type: json['type'],
+    documentUrl: json['documentUrl'], // Read from JSON
   );
 
   Map<String, dynamic> toJson() => {
     'id': id,
     'productId': productId,
-    'fssaiNumber': fssaiNumber,
-    'gstNumber': gstNumber,
-    'hsnCode': hsnCode,
-    'foodType': foodType,
+    'type': type,
+    'documentUrl': documentUrl, // Include in JSON
   };
 }

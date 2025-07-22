@@ -1,18 +1,23 @@
 import 'package:go_router/go_router.dart';
+import 'package:my_vendor_app/models/product.dart';
 import 'package:my_vendor_app/pages/orders/management.dart';
+import 'package:my_vendor_app/pages/orders/mark_order_shipped_page.dart';
+import 'package:my_vendor_app/pages/orders/order-invoice.dart';
+import 'package:my_vendor_app/pages/orders/tracking_details_page.dart';
 import 'package:my_vendor_app/pages/orders/sales-revenue.dart';
 import 'package:my_vendor_app/pages/orders/track.dart';
 import 'package:my_vendor_app/pages/products/commission-summary.dart';
 import 'package:my_vendor_app/pages/products/inventory.dart';
 import 'package:my_vendor_app/pages/products/management.dart';
 import 'package:my_vendor_app/pages/products/top.dart';
+import 'package:my_vendor_app/pages/products/viewproductpage.dart';
+import 'package:my_vendor_app/pages/orders/latest_orders_page.dart';
 
 import 'screens/splash_screen.dart';
 import 'screens/welcome_screen.dart';
 import 'screens/login_screen.dart';
 
 import 'pages/home_page.dart';
-import 'pages/orders_page.dart';
 import 'pages/add_product_page.dart';
 import 'pages/reports_page.dart';
 import 'pages/profile_page.dart';
@@ -38,10 +43,17 @@ final GoRouter router = GoRouter(
       path: '/add-product',
       name: 'addProduct',
       builder: (context, state) {
-        // Optional: check if editing by looking for query param or passed extra
-        final product = null; // use null for Add
-
+        final product = state.extra as Product?;
         return AddProductPage(initialData: product);
+      },
+    ),
+
+    GoRoute(
+      path: '/view-product',
+      name: 'viewProduct',
+      builder: (context, state) {
+        final product = state.extra as Product;
+        return ViewProductPage(product: product);
       },
     ),
 
@@ -68,8 +80,21 @@ final GoRouter router = GoRouter(
       builder: (context, state) => const DataPrivacyPage(),
     ),
     GoRoute(
+      path: '/orders/latest-orders',
+      builder: (context, state) => const LatestOrdersPage(),
+    ),
+    GoRoute(
       path: '/orders/management',
       builder: (context, state) => const OrderManagementPage(),
+    ),
+    GoRoute(
+      path: '/orders/mark-shipped',
+      builder: (context, state) => const MarkOrderShippedPage(),
+    ),
+
+    GoRoute(
+      path: '/orders/tracking-details',
+      builder: (context, state) => const TrackingDetailsPage(),
     ),
     GoRoute(
       path: '/orders/sales-revenue',
@@ -80,6 +105,15 @@ final GoRouter router = GoRouter(
       builder: (context, state) => const OrderTrackPage(),
     ),
     GoRoute(
+      path: '/orders/invoice',
+      name: 'invoice',
+      builder: (context, state) {
+        final orderData = state.extra as Map<String, dynamic>;
+        return InvoicePage(order: orderData);
+      },
+    ),
+
+    GoRoute(
       path: '/products/commission-summary',
       builder: (context, state) => const CommissionSummaryPage(),
     ),
@@ -89,7 +123,7 @@ final GoRouter router = GoRouter(
     ),
     GoRoute(
       path: '/products/management',
-      builder: (context, state) => const InventoryManagementPage(),
+      builder: (context, state) => const ProductManagementPage(),
     ),
     GoRoute(
       path: '/products/top',

@@ -1,6 +1,5 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
-import '../theme/colors.dart';
 import '../data/chart_mock_data.dart';
 
 class SalesOverviewChart extends StatelessWidget {

@@ -1,5 +1,4 @@
 // mock_data.dart
-import 'package:flutter/material.dart';
 
 class Order {
   final DateTime date;
@@ -8,11 +7,11 @@ class Order {
   Order({required this.date, required this.amount});
 }
 
-class Product {
+class ProductSales {
   final String name;
   final int sales;
 
-  Product({required this.name, required this.sales});
+  ProductSales({required this.name, required this.sales});
 }
 
 class User {
@@ -31,12 +30,12 @@ final List<Order> mockOrders = [
   Order(date: DateTime.now(), amount: 650),
 ];
 
-final List<Product> mockProducts = [
-  Product(name: 'Product A', sales: 80),
-  Product(name: 'Product B', sales: 60),
-  Product(name: 'Product C', sales: 75),
-  Product(name: 'Product D', sales: 50),
-  Product(name: 'Product E', sales: 90),
+final List<ProductSales> mockProducts = [
+  ProductSales(name: 'Product A', sales: 80),
+  ProductSales(name: 'Product B', sales: 60),
+  ProductSales(name: 'Product C', sales: 75),
+  ProductSales(name: 'Product D', sales: 50),
+  ProductSales(name: 'Product E', sales: 90),
 ];
 
 final List<User> mockUsers = [

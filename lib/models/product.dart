@@ -29,6 +29,7 @@ class Product {
   final double price;
   final double basePrice;
   final double taxRate;
+  final int stock;
   final int vendorId;
   final int? categoryId;
   final ProductStatus status;
@@ -38,7 +39,7 @@ class Product {
   // Relations
   final Vendor? vendor;
   final ProductCategory? category;
-  final Compliance? compliance;
+  final List<Compliance>? compliance;
   final List<OrderItem> orderItems;
   final List<Notification> notifications;
   final List<ProductImage> images;
@@ -51,6 +52,7 @@ class Product {
     required this.price,
     required this.basePrice,
     required this.taxRate,
+    required this.stock,
     required this.vendorId,
     required this.status,
     required this.createdAt,
@@ -58,7 +60,7 @@ class Product {
     this.categoryId,
     this.vendor,
     this.category,
-    this.compliance,
+    this.compliance = const [],
     this.orderItems = const [],
     this.notifications = const [],
     this.images = const [],
@@ -72,6 +74,7 @@ class Product {
     price: (json['price'] as num).toDouble(),
     basePrice: (json['basePrice'] as num).toDouble(),
     taxRate: (json['taxRate'] as num).toDouble(),
+    stock: (json['stock']),
     vendorId: json['vendorId'],
     categoryId: json['categoryId'],
     status: ProductStatus.fromString(json['status']),
@@ -83,9 +86,10 @@ class Product {
             ? ProductCategory.fromJson(json['category'])
             : null,
     compliance:
-        json['compliance'] != null
-            ? Compliance.fromJson(json['compliance'])
-            : null,
+        (json['compliance'] as List<dynamic>?)
+            ?.map((e) => Compliance.fromJson(e))
+            .toList() ??
+        [],
     orderItems:
         (json['orderItems'] as List<dynamic>?)
             ?.map((e) => OrderItem.fromJson(e))
@@ -112,6 +116,8 @@ class Product {
     'id': id,
     'name': name,
     'description': description,
+    'basePrice': basePrice,
+    'taxRate': taxRate,
     'price': price,
     'vendorId': vendorId,
     'categoryId': categoryId,
@@ -120,7 +126,7 @@ class Product {
     'updatedAt': updatedAt.toIso8601String(),
     'vendor': vendor?.toJson(),
     'category': category?.toJson(),
-    'compliance': compliance?.toJson(),
+    'compliance': compliance!.map((e) => e.toJson()).toList(),
     'orderItems': orderItems.map((e) => e.toJson()).toList(),
     'notifications': notifications.map((e) => e.toJson()).toList(),
     'images': images.map((e) => e.toJson()).toList(),
