@@ -80,14 +80,17 @@ class _CommissionSummaryPageState extends State<CommissionSummaryPage> {
                   _fromDate = tempFrom;
                   _toDate = tempTo;
                   _orders =
-                      _getMockOrders().where((o) {
-                        return o.createdAt.isAfter(
-                              _fromDate.subtract(const Duration(days: 1)),
-                            ) &&
-                            o.createdAt.isBefore(
-                              _toDate.add(const Duration(days: 1)),
-                            );
-                      }).toList();
+                      _getMockOrders()
+                          .where(
+                            (o) =>
+                                o.createdAt.isAfter(
+                                  _fromDate.subtract(const Duration(days: 1)),
+                                ) &&
+                                o.createdAt.isBefore(
+                                  _toDate.add(const Duration(days: 1)),
+                                ),
+                          )
+                          .toList();
                 });
                 Navigator.pop(context);
               },
@@ -128,7 +131,6 @@ class _CommissionSummaryPageState extends State<CommissionSummaryPage> {
   double get totalCommission => _orders
       .expand((o) => o.items ?? [])
       .fold(0.0, (sum, item) => sum + (item.commissionAmt ?? 0));
-
   int get totalOrders => _orders.length;
 
   @override
@@ -142,56 +144,63 @@ class _CommissionSummaryPageState extends State<CommissionSummaryPage> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
-                  'Commission Overview',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
-                ),
-                TextButton.icon(
-                  onPressed: _openDateFilter,
-                  icon: const Icon(Icons.filter_alt, color: Colors.white),
-                  label: const Text(
-                    'Filter',
-                    style: TextStyle(color: Colors.white),
-                  ),
-                  style: TextButton.styleFrom(
-                    backgroundColor: Colors.orange,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 12,
+                Row(
+                  children: [
+                    const SizedBox(width: 8),
+                    const Text(
+                      'Commission Overview',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
+                    TextButton.icon(
+                      onPressed: () {
+                        _openDateFilter;
+                      },
+                      icon: const Icon(Icons.filter_alt, color: Colors.white),
+                      label: const Text(
+                        'Filter',
+                        style: TextStyle(color: Colors.white),
+                      ),
+                      style: TextButton.styleFrom(
+                        backgroundColor: Colors.orange,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 12,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
                     ),
-                  ),
+                  ],
                 ),
               ],
             ),
           ),
+
           const Divider(height: 32),
-          Expanded(
-            child: ListView(
-              padding: const EdgeInsets.all(16),
-              children: [
-                _buildCommissionCard(),
-                const SizedBox(height: 16),
-                _buildStatSummary(),
-                const SizedBox(height: 16),
-                _buildCommissionChart(),
-                const SizedBox(height: 16),
-                _buildProductDateWiseLineChart(),
-                const SizedBox(height: 16),
-                const Text(
-                  "Recent Orders",
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                ),
-                const SizedBox(height: 8),
-                ..._orders.map(_buildOrderTile).toList(),
-                const SizedBox(height: 16),
-                _buildTipsCard(),
-                const SizedBox(height: 16),
-                _buildPartnersRow(),
-              ],
-            ),
+          ListView(
+            padding: const EdgeInsets.all(16),
+            children: [
+              _buildCommissionCard(),
+              const SizedBox(height: 16),
+              _buildStatSummary(),
+              const SizedBox(height: 16),
+              _buildCommissionChart(),
+              const SizedBox(height: 16),
+              const Text(
+                "Recent Orders",
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              ),
+              const SizedBox(height: 8),
+              ..._orders.map(_buildOrderTile).toList(),
+              const SizedBox(height: 16),
+              _buildTipsCard(),
+              const SizedBox(height: 16),
+              _buildPartnersRow(),
+            ],
           ),
         ],
       ),
@@ -202,26 +211,26 @@ class _CommissionSummaryPageState extends State<CommissionSummaryPage> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.primary.withOpacity(0.3),
+        color: AppColors.primary,
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Total Commission', style: TextStyle(color: Colors.black)),
+          const Text('Total Commission', style: TextStyle(color: Colors.white)),
           const SizedBox(height: 6),
           Text(
             '₹${totalCommission.toStringAsFixed(2)}',
             style: const TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.bold,
-              color: Colors.black,
+              color: Colors.white,
             ),
           ),
           const SizedBox(height: 4),
           Text(
             'As of ${DateFormat('MMMM dd, yyyy').format(_toDate)}',
-            style: TextStyle(color: Colors.grey.shade600),
+            style: const TextStyle(color: Colors.white70),
           ),
         ],
       ),
@@ -245,7 +254,7 @@ class _CommissionSummaryPageState extends State<CommissionSummaryPage> {
             "Total Orders",
             "$totalOrders",
             "Completed this month",
-            bgColor: AppColors.pink.withOpacity(0.3),
+            bgColor: AppColors.green.withOpacity(0.3),
           ),
         ),
       ],
@@ -527,145 +536,6 @@ class _CommissionSummaryPageState extends State<CommissionSummaryPage> {
     );
   }
 
-  Widget _buildProductDateWiseLineChart() {
-    final Map<String, Map<String, double>> groupedData = {};
-
-    for (var order in _orders) {
-      final dateKey = DateFormat('dd MMM').format(order.createdAt);
-      for (var item in order.items ?? []) {
-        final productName = item.product?.name ?? 'Product ${item.productId}';
-        final commission = item.commissionAmt ?? 0.0;
-
-        groupedData.putIfAbsent(productName, () => {});
-        groupedData[productName]![dateKey] =
-            (groupedData[productName]![dateKey] ?? 0.0) + commission;
-      }
-    }
-
-    final dateList =
-        <String>{for (var map in groupedData.values) ...map.keys}.toList()
-          ..sort(
-            (a, b) => DateFormat(
-              'dd MMM',
-            ).parse(a).compareTo(DateFormat('dd MMM').parse(b)),
-          );
-
-    final maxCommission = groupedData.values
-        .expand((e) => e.values)
-        .fold(0.0, (prev, curr) => curr > prev ? curr : prev);
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade300),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Product-wise Commission',
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-          ),
-          const SizedBox(height: 20),
-          SizedBox(
-            height: 300,
-            child: LineChart(
-              LineChartData(
-                minY: 0,
-                maxY: maxCommission + (maxCommission * 0.2),
-                gridData: FlGridData(show: false),
-                borderData: FlBorderData(
-                  show: true,
-                  border: Border(
-                    left: BorderSide(color: Colors.grey.shade300, width: 1),
-                    bottom: BorderSide(color: Colors.grey.shade300, width: 1),
-                    right: BorderSide.none, // ❌ Removed right border
-                    top: BorderSide.none, // ❌ Removed top border
-                  ),
-                ),
-                titlesData: FlTitlesData(
-                  bottomTitles: AxisTitles(
-                    sideTitles: SideTitles(
-                      showTitles: true,
-                      interval: 1,
-                      getTitlesWidget: (value, meta) {
-                        final index = value.toInt();
-                        if (index >= 0 && index < dateList.length) {
-                          return SideTitleWidget(
-                            axisSide: meta.axisSide,
-                            child: Text(
-                              dateList[index],
-                              style: const TextStyle(fontSize: 10),
-                            ),
-                          );
-                        }
-                        return const SizedBox.shrink();
-                      },
-                    ),
-                  ),
-                  leftTitles: AxisTitles(
-                    sideTitles: SideTitles(
-                      showTitles: true,
-                      getTitlesWidget:
-                          (value, meta) => Text(
-                            '₹${value.toInt()}',
-                            style: const TextStyle(fontSize: 10),
-                          ),
-                      interval: maxCommission / 4,
-                    ),
-                  ),
-                  topTitles: AxisTitles(
-                    sideTitles: SideTitles(showTitles: false),
-                  ),
-                  rightTitles: AxisTitles(
-                    sideTitles: SideTitles(showTitles: false),
-                  ),
-                ),
-                lineBarsData:
-                    groupedData.entries.map((entry) {
-                      final product = entry.key;
-                      final dataMap = entry.value;
-
-                      return LineChartBarData(
-                        isCurved: true,
-                        spots: List.generate(dateList.length, (i) {
-                          final date = dateList[i];
-                          final commission = dataMap[date] ?? 0.0;
-                          return FlSpot(i.toDouble(), commission);
-                        }),
-                        dotData: FlDotData(show: false),
-                        color: _getColorForLabel(product),
-                        barWidth: 3,
-                      );
-                    }).toList(),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Color _getColorForLabel(String label) {
-    final colors = [
-      Colors.blue,
-      Colors.green,
-      Colors.orange,
-      Colors.purple,
-      Colors.red,
-      Colors.teal,
-      Colors.brown,
-      Colors.pink,
-      Colors.indigo,
-      Colors.cyan,
-    ];
-    final hash = label.codeUnits.fold(0, (a, b) => a + b);
-    return colors[hash % colors.length];
-  }
-
-  // Mock data
   List<Order> _getMockOrders() {
     return List.generate(5, (index) {
       return Order(
