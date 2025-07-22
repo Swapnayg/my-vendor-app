@@ -34,6 +34,11 @@ class Order {
   final List<OrderItem>? items;
   final Payment? payment;
 
+  // ✅ Newly added fields
+  final Map<String, dynamic>? vendor;
+  final Map<String, dynamic>? customer;
+  final Map<String, dynamic>? user;
+
   Order({
     required this.id,
     required this.customerId,
@@ -49,6 +54,9 @@ class Order {
     required this.createdAt,
     this.items,
     this.payment,
+    this.vendor,
+    this.customer,
+    this.user,
   });
 
   factory Order.fromJson(Map<String, dynamic> json) {
@@ -82,6 +90,18 @@ class Order {
               : null,
       payment:
           json['payment'] != null ? Payment.fromJson(json['payment']) : null,
+
+      // ✅ Decode new fields
+      vendor:
+          json['vendor'] != null
+              ? Map<String, dynamic>.from(json['vendor'])
+              : null,
+      customer:
+          json['customer'] != null
+              ? Map<String, dynamic>.from(json['customer'])
+              : null,
+      user:
+          json['user'] != null ? Map<String, dynamic>.from(json['user']) : null,
     );
   }
 
@@ -102,6 +122,11 @@ class Order {
       'createdAt': createdAt.toIso8601String(),
       'items': items?.map((x) => x.toJson()).toList(),
       'payment': payment?.toJson(),
+
+      // ✅ Encode new fields
+      'vendor': vendor,
+      'customer': customer,
+      'user': user,
     };
   }
 }

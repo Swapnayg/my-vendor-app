@@ -28,6 +28,19 @@ class LatestOrdersPage extends StatelessWidget {
       },
     ];
 
+    Color _getStatusColor(String status) {
+      switch (status.toLowerCase()) {
+        case 'shipped':
+          return Colors.blue;
+        case 'out for delivery':
+          return Colors.orange;
+        case 'processing':
+          return Colors.deepPurple;
+        default:
+          return Colors.grey;
+      }
+    }
+
     return CommonLayout(
       body: Column(
         children: [
@@ -51,6 +64,7 @@ class LatestOrdersPage extends StatelessWidget {
               itemCount: latestOrders.length,
               itemBuilder: (context, index) {
                 final order = latestOrders[index];
+                final status = order['status'] ?? '';
                 return Card(
                   margin: const EdgeInsets.only(bottom: 12),
                   shape: RoundedRectangleBorder(
@@ -74,19 +88,28 @@ class LatestOrdersPage extends StatelessWidget {
                           style: const TextStyle(fontWeight: FontWeight.w500),
                         ),
                         Text(
-                          order['status']!,
-                          style: const TextStyle(color: Colors.green),
-                        ),
-                        Text(
                           order['date']!,
                           style: const TextStyle(fontSize: 12),
                         ),
                       ],
                     ),
-                    trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                    trailing: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text(
+                          status,
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: _getStatusColor(status),
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        const Icon(Icons.arrow_forward_ios, size: 14),
+                      ],
+                    ),
                     onTap: () {
                       context.go('/orders/track');
-                      // optionally pass order ID as query param if needed: context.go('/orders/track?orderId=${order['orderId']}');
                     },
                   ),
                 );

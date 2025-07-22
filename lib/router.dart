@@ -1,5 +1,8 @@
 import 'package:go_router/go_router.dart';
+import 'package:my_vendor_app/data/chart_mock_data.dart';
+import 'package:my_vendor_app/models/order.dart';
 import 'package:my_vendor_app/models/product.dart';
+import 'package:my_vendor_app/pages/orders/manage-order.dart';
 import 'package:my_vendor_app/pages/orders/management.dart';
 import 'package:my_vendor_app/pages/orders/mark_order_shipped_page.dart';
 import 'package:my_vendor_app/pages/orders/order-invoice.dart';
@@ -93,6 +96,15 @@ final GoRouter router = GoRouter(
     ),
 
     GoRoute(
+      path: '/orders/view',
+      builder: (context, state) {
+        final order =
+            state.extra as Order; // Make sure to import your Order model
+        return OrderViewPage(order: order);
+      },
+    ),
+
+    GoRoute(
       path: '/orders/tracking-details',
       builder: (context, state) => const TrackingDetailsPage(),
     ),
@@ -106,10 +118,12 @@ final GoRouter router = GoRouter(
     ),
     GoRoute(
       path: '/orders/invoice',
-      name: 'invoice',
       builder: (context, state) {
-        final orderData = state.extra as Map<String, dynamic>;
-        return InvoicePage(order: orderData);
+        final data = state.extra as Map<String, dynamic>;
+        return InvoicePage(
+          order: data['order'],
+          source: data['source'] ?? 'latest',
+        );
       },
     ),
 

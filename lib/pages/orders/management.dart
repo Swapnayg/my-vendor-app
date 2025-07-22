@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:my_vendor_app/common/common_layout.dart';
 import 'package:my_vendor_app/models/order_item.dart';
+import 'package:my_vendor_app/models/payment.dart';
 import 'package:my_vendor_app/models/product.dart';
+import 'package:my_vendor_app/models/product_image.dart';
 import '/models/order.dart'; // Adjust this import based on your actual path
+import 'package:go_router/go_router.dart';
 
 class OrderManagementPage extends StatefulWidget {
   const OrderManagementPage({super.key});
@@ -19,6 +23,7 @@ class _OrderManagementPageState extends State<OrderManagementPage> {
   String _search = '';
   DateTimeRange? _dateRange;
   OrderStatus? _selectedStatus;
+  DateTime? _selectedDate;
 
   @override
   void initState() {
@@ -40,10 +45,47 @@ class _OrderManagementPageState extends State<OrderManagementPage> {
     final newOrders = List.generate(10, (i) {
       final orderId = i + _orders.length + 1000;
 
+      // Generate 3 mock images per product
+      final List<ProductImage> images = List.generate(3, (j) {
+        return ProductImage(
+          id: j,
+          url: 'https://source.unsplash.com/random/200x200?sig=${i * 10 + j}',
+          productId: i,
+          createdAt: DateTime.now().subtract(Duration(minutes: j * 10)),
+        );
+      });
+
+      images.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      final latestImageUrl = images.first.url;
+
+      final product = Product(
+        id: i,
+        name: 'Product ${i + 1}',
+        images: images,
+        description: '',
+        price: 0.0,
+        basePrice: 0.0,
+        taxRate: 0.0,
+        stock: 100,
+        vendorId: 1,
+        status: ProductStatus.approved,
+        createdAt: DateTime.now().subtract(Duration(days: i * 2)),
+        updatedAt: DateTime.now().subtract(Duration(days: i * 2)),
+      );
+
       return Order(
         id: orderId,
         customerId: 1,
         vendorId: 2,
+        payment: Payment(
+          id: orderId,
+          orderId: orderId,
+          amount: 100.0 + i,
+          method: 'Cash',
+          createdAt: DateTime.now().subtract(Duration(days: i * 2)),
+          status: PaymentStatus.PAID,
+        ),
+        vendor: {'businessName': 'Vendor ${i + 1}'},
         status: OrderStatus.values[i % OrderStatus.values.length],
         subTotal: 100.0 + i,
         taxTotal: 10.0,
@@ -60,16 +102,15 @@ class _OrderManagementPageState extends State<OrderManagementPage> {
             taxRate: 0.1,
             taxAmount: 5.0,
             price: 55.0,
-            product: Product(
-              id: i,
-              name: 'Product ${i + 1}',
-              image:
-                  'https://source.unsplash.com/random/200x200?sig=$i&product', // random image
-            ),
+            product: product,
           ),
-          // You can add more items here if needed
         ],
-        payment: null,
+
+        customer: {
+          'name': 'Customer ${i + 1}',
+          'email': 'customer${i + 1}@example.com',
+          'phone': '+91 90000${i + 1000}',
+        },
       );
     });
 
@@ -96,23 +137,21 @@ class _OrderManagementPageState extends State<OrderManagementPage> {
           );
 
       final matchesDate =
-          _dateRange == null ||
-          (order.createdAt.isAfter(
-                _dateRange!.start.subtract(const Duration(days: 1)),
-              ) &&
-              order.createdAt.isBefore(
-                _dateRange!.end.add(const Duration(days: 1)),
-              ));
+          _selectedDate == null ||
+          (order.createdAt.year == _selectedDate!.year &&
+              order.createdAt.month == _selectedDate!.month &&
+              order.createdAt.day == _selectedDate!.day);
+
       final matchesStatus =
           _selectedStatus == null || order.status == _selectedStatus;
+
       return matchesSearch && matchesDate && matchesStatus;
     }).toList();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Order Management')),
+    return CommonLayout(
       body: Column(
         children: [
           _buildFilters(),
@@ -145,13 +184,18 @@ class _OrderManagementPageState extends State<OrderManagementPage> {
       padding: const EdgeInsets.all(12),
       child: LayoutBuilder(
         builder: (context, constraints) {
+          final isMobile = constraints.maxWidth < 600;
+
           return Wrap(
             spacing: 12,
             runSpacing: 12,
+            alignment: WrapAlignment.start,
             children: [
               // Search Field
-              SizedBox(
-                width: constraints.maxWidth < 500 ? constraints.maxWidth : 200,
+              ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxWidth: isMobile ? double.infinity : 220,
+                ),
                 child: TextField(
                   decoration: const InputDecoration(
                     hintText: 'Search Order...',
@@ -163,39 +207,44 @@ class _OrderManagementPageState extends State<OrderManagementPage> {
                 ),
               ),
 
-              // Date Range Picker
-              SizedBox(
-                width: constraints.maxWidth < 500 ? constraints.maxWidth : 220,
+              // Single Date Picker
+              ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxWidth: isMobile ? double.infinity : 200,
+                ),
                 child: TextField(
                   readOnly: true,
                   controller: TextEditingController(
                     text:
-                        _dateRange == null
+                        _selectedDate == null
                             ? ''
-                            : '${DateFormat('dd MMM yyyy').format(_dateRange!.start)} - ${DateFormat('dd MMM yyyy').format(_dateRange!.end)}',
+                            : DateFormat('dd MMM yyyy').format(_selectedDate!),
                   ),
                   decoration: const InputDecoration(
-                    hintText: 'Select Date Range',
+                    hintText: 'Select Date',
                     prefixIcon: Icon(Icons.calendar_today),
                     border: OutlineInputBorder(),
                     isDense: true,
                   ),
                   onTap: () async {
-                    final picked = await showDateRangePicker(
+                    final pickedDate = await showDatePicker(
                       context: context,
+                      initialDate: _selectedDate ?? DateTime.now(),
                       firstDate: DateTime(2020),
                       lastDate: DateTime.now(),
                     );
-                    if (picked != null) {
-                      setState(() => _dateRange = picked);
+                    if (pickedDate != null) {
+                      setState(() => _selectedDate = pickedDate);
                     }
                   },
                 ),
               ),
 
               // Status Filter
-              SizedBox(
-                width: constraints.maxWidth < 500 ? constraints.maxWidth : 180,
+              ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxWidth: isMobile ? double.infinity : 200,
+                ),
                 child: DropdownButtonFormField<OrderStatus?>(
                   value: _selectedStatus,
                   isDense: true,
@@ -230,6 +279,8 @@ class _OrderManagementPageState extends State<OrderManagementPage> {
     final firstItem =
         order.items?.isNotEmpty == true ? order.items!.first : null;
     final product = firstItem?.product;
+    final productImage =
+        product?.images?.isNotEmpty == true ? product!.images!.first.url : null;
 
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
@@ -240,7 +291,7 @@ class _OrderManagementPageState extends State<OrderManagementPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Order ID, Date and View
+            // Order ID, Date, View Button
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -265,23 +316,33 @@ class _OrderManagementPageState extends State<OrderManagementPage> {
                   ],
                 ),
                 TextButton(
-                  onPressed: () {},
+                  onPressed: () {
+                    // TODO: Navigate to order details
+                  },
                   style: TextButton.styleFrom(
                     foregroundColor: Colors.deepPurple,
                     padding: EdgeInsets.zero,
                     minimumSize: const Size(50, 30),
                     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   ),
-                  child: const Text(
-                    'View',
-                    style: TextStyle(fontWeight: FontWeight.w500, fontSize: 14),
+                  child: TextButton(
+                    onPressed: () {
+                      context.go('/orders/view', extra: order);
+                    },
+                    child: const Text(
+                      'View',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w500,
+                        fontSize: 14,
+                      ),
+                    ),
                   ),
                 ),
               ],
             ),
             const SizedBox(height: 12),
 
-            // Product row
+            // Product Info Row
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -293,15 +354,15 @@ class _OrderManagementPageState extends State<OrderManagementPage> {
                     color: Colors.grey[200],
                     borderRadius: BorderRadius.circular(8),
                     image:
-                        product?.image != null
+                        productImage != null
                             ? DecorationImage(
-                              image: NetworkImage(product!.image!),
+                              image: NetworkImage(productImage),
                               fit: BoxFit.cover,
                             )
                             : null,
                   ),
                   child:
-                      product?.image == null
+                      productImage == null
                           ? const Icon(
                             Icons.image,
                             size: 30,
@@ -311,7 +372,7 @@ class _OrderManagementPageState extends State<OrderManagementPage> {
                 ),
                 const SizedBox(width: 12),
 
-                // Product info
+                // Product name and qty
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -335,7 +396,7 @@ class _OrderManagementPageState extends State<OrderManagementPage> {
                   ),
                 ),
 
-                // Price
+                // Total price
                 Text(
                   '₹${order.total.toStringAsFixed(0)}',
                   style: const TextStyle(
@@ -348,7 +409,7 @@ class _OrderManagementPageState extends State<OrderManagementPage> {
             ),
             const SizedBox(height: 12),
 
-            // Status badge
+            // Order status badge
             _buildStatusBadge(order.status),
           ],
         ),
@@ -357,41 +418,47 @@ class _OrderManagementPageState extends State<OrderManagementPage> {
   }
 
   Widget _buildStatusBadge(OrderStatus status) {
-    final label = orderStatusToString(status);
-    final color = _getStatusColor(status);
+    Color bgColor;
+    String text;
+
+    switch (status) {
+      case OrderStatus.PENDING:
+        bgColor = Colors.orange;
+        text = 'Pending';
+        break;
+      case OrderStatus.SHIPPED:
+        bgColor = Colors.blue;
+        text = 'Shipped';
+        break;
+      case OrderStatus.DELIVERED:
+        bgColor = Colors.green;
+        text = 'Delivered';
+        break;
+      case OrderStatus.RETURNED:
+        bgColor = Colors.redAccent;
+        text = 'Returned';
+        break;
+      case OrderStatus.CANCELLED:
+        bgColor = Colors.grey;
+        text = 'Cancelled';
+        break;
+    }
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(20),
+        color: bgColor.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(6),
       ),
       child: Text(
-        label,
+        text,
         style: TextStyle(
-          color: color,
-          fontWeight: FontWeight.w500,
+          color: bgColor,
+          fontWeight: FontWeight.w600,
           fontSize: 12,
         ),
       ),
     );
-  }
-
-  Color _getStatusColor(OrderStatus status) {
-    switch (status) {
-      case OrderStatus.PENDING:
-        return Colors.orange;
-      case OrderStatus.SHIPPED:
-        return Colors.blue;
-      case OrderStatus.DELIVERED:
-        return Colors.green;
-      case OrderStatus.RETURNED:
-        return Colors.red;
-      case OrderStatus.CANCELLED:
-        return Colors.grey;
-      default:
-        return Colors.black;
-    }
   }
 
   @override

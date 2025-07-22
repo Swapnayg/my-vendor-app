@@ -1,10 +1,10 @@
 // mock_data.dart
 
-class Order {
+class Order_Mock {
   final DateTime date;
   final double amount;
 
-  Order({required this.date, required this.amount});
+  Order_Mock({required this.date, required this.amount});
 }
 
 class ProductSales {
@@ -20,14 +20,14 @@ class User {
   User({required this.joinedDate});
 }
 
-final List<Order> mockOrders = [
-  Order(date: DateTime.now().subtract(Duration(days: 6)), amount: 200),
-  Order(date: DateTime.now().subtract(Duration(days: 5)), amount: 300),
-  Order(date: DateTime.now().subtract(Duration(days: 4)), amount: 280),
-  Order(date: DateTime.now().subtract(Duration(days: 3)), amount: 500),
-  Order(date: DateTime.now().subtract(Duration(days: 2)), amount: 450),
-  Order(date: DateTime.now().subtract(Duration(days: 1)), amount: 700),
-  Order(date: DateTime.now(), amount: 650),
+final List<Order_Mock> mockOrders = [
+  Order_Mock(date: DateTime.now().subtract(Duration(days: 6)), amount: 200),
+  Order_Mock(date: DateTime.now().subtract(Duration(days: 5)), amount: 300),
+  Order_Mock(date: DateTime.now().subtract(Duration(days: 4)), amount: 280),
+  Order_Mock(date: DateTime.now().subtract(Duration(days: 3)), amount: 500),
+  Order_Mock(date: DateTime.now().subtract(Duration(days: 2)), amount: 450),
+  Order_Mock(date: DateTime.now().subtract(Duration(days: 1)), amount: 700),
+  Order_Mock(date: DateTime.now(), amount: 650),
 ];
 
 final List<ProductSales> mockProducts = [

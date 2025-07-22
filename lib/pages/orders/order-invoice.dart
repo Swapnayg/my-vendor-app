@@ -8,8 +8,9 @@ import 'package:go_router/go_router.dart';
 
 class InvoicePage extends StatelessWidget {
   final Map<String, dynamic> order;
+  final String source;
 
-  const InvoicePage({super.key, required this.order});
+  const InvoicePage({super.key, required this.order, required this.source});
 
   @override
   Color _getStatusColor(String status) {
@@ -30,22 +31,31 @@ class InvoicePage extends StatelessWidget {
   }
 
   Widget build(BuildContext context) {
+    print("orders");
+    print(order);
     final List items = order['items'];
     final total = items.fold<double>(
       0.0,
-      (sum, item) => sum + (item['price'] as double) * (item['qty'] as int),
+      (sum, item) =>
+          sum + (item['price'] as double) * (item['quantity'] as int),
     );
 
     final customer = order['customer'];
     final formattedDate = DateFormat.yMMMMd().format(
-      DateTime.tryParse(order['date'] ?? '') ?? DateTime.now(),
+      DateTime.tryParse(order['createdAt'] ?? '') ?? DateTime.now(),
     );
 
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.go('/orders/latest-orders'),
+          onPressed: () {
+            if (source == 'management') {
+              context.go('/orders/management');
+            } else {
+              context.go('/orders/latest-orders');
+            }
+          },
         ),
         title: const Text('Invoice Details'),
       ),
@@ -193,9 +203,9 @@ class InvoicePage extends StatelessWidget {
                       fit: BoxFit.cover,
                     ),
                     title: Text(item['name']),
-                    subtitle: Text('${item['qty']} x ₹${item['price']}'),
+                    subtitle: Text('${item['quantity']} x ₹${item['price']}'),
                     trailing: Text(
-                      '₹${(item['price'] * item['qty']).toStringAsFixed(2)}',
+                      '₹${(item['price'] * item['quantity']).toStringAsFixed(2)}',
                     ),
                   );
                 }).toList(),
@@ -240,12 +250,13 @@ class InvoicePage extends StatelessWidget {
     final List items = order['items'];
     final total = items.fold<double>(
       0.0,
-      (sum, item) => sum + (item['price'] as double) * (item['qty'] as int),
+      (sum, item) =>
+          sum + (item['price'] as double) * (item['quantity'] as int),
     );
 
     final customer = order['customer'];
     final formattedDate = DateFormat.yMMMMd().format(
-      DateTime.tryParse(order['date'] ?? '') ?? DateTime.now(),
+      DateTime.tryParse(order['createdAt'] ?? '') ?? DateTime.now(),
     );
 
     pdf.addPage(
@@ -310,7 +321,7 @@ class InvoicePage extends StatelessWidget {
                   data:
                       items.map((item) {
                         final price = item['price'] as double;
-                        final qty = item['qty'] as int;
+                        final qty = item['quantity'] as int;
                         return [
                           item['name'],
                           '$qty',

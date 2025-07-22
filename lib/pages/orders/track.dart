@@ -8,33 +8,31 @@ class OrderTrackPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final mockOrder = {
-  'orderId': '#MDX789012345',
-  'status': 'Pending',
-  'payment': 'Paid',
-  'date': '2025-07-22T10:30:00',
-  'vendor': {
-    'businessName': 'Smart Workspaces Inc.',
-  },
-  'customer': {
-    'name': 'Eleanor Vance',
-    'email': 'eleanor.vance@example.com',
-    'phone': '+1 (555) 123-4567',
-  },
-  'items': [
-    {
-      'name': 'Ergonomic Office Chair Pro',
-      'qty': 1,
-      'price': 299.99,
-      'image': 'assets/images/upload.png',
-    },
-    {
-      'name': 'Wireless Mechanical Keyboard',
-      'qty': 1,
-      'price': 129.99,
-      'image': 'assets/images/upload.png',
-    },
-  ],
-};
+      'orderId': '#MDX789012345',
+      'status': 'Pending',
+      'payment': 'Paid',
+      'createdAt': '2025-07-22T10:30:00',
+      'vendor': {'businessName': 'Smart Workspaces Inc.'},
+      'customer': {
+        'name': 'Eleanor Vance',
+        'email': 'eleanor.vance@example.com',
+        'phone': '+1 (555) 123-4567',
+      },
+      'items': [
+        {
+          'name': 'Ergonomic Office Chair Pro',
+          'quantity': 1,
+          'price': 299.99,
+          'image': 'assets/images/upload.png',
+        },
+        {
+          'name': 'Wireless Mechanical Keyboard',
+          'quantity': 1,
+          'price': 129.99,
+          'image': 'assets/images/upload.png',
+        },
+      ],
+    };
 
     return CommonLayout(
       body: Column(
@@ -77,7 +75,10 @@ class OrderTrackPage extends StatelessWidget {
                     ),
                   ),
                   onPressed: () {
-                    context.go('/orders/invoice', extra: mockOrder);
+                    context.go(
+                      '/orders/invoice',
+                      extra: {'order': mockOrder, 'source': 'latest'},
+                    );
                   },
                 ),
               ],
@@ -183,7 +184,7 @@ class OrderTrackPage extends StatelessWidget {
                                       ),
                                     ),
                                     Text(
-                                      "Qty: ${item['qty']}",
+                                      "Qty: ${item['quantity']}",
                                       style: TextStyle(
                                         fontSize: 12,
                                         color: Colors.grey[700],
