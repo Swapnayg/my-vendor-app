@@ -28,7 +28,7 @@ class LatestOrdersPage extends StatelessWidget {
       },
     ];
 
-    Color _getStatusColor(String status) {
+    Color getStatusColor(String status) {
       switch (status.toLowerCase()) {
         case 'shipped':
           return Colors.blue;
@@ -101,7 +101,7 @@ class LatestOrdersPage extends StatelessWidget {
                           status,
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
-                            color: _getStatusColor(status),
+                            color: getStatusColor(status),
                           ),
                         ),
                         const SizedBox(height: 4),

@@ -8,7 +8,7 @@ class CommonLayout extends StatelessWidget {
   const CommonLayout({super.key, required this.body});
 
   int _getIndexFromPath(String path) {
-    if (path.contains('/orders')) return 1;
+    if (path.contains('/orders/latest-orders')) return 1;
     if (path.contains('/add-product')) return 2;
     if (path.contains('/reports')) return 3;
     if (path.contains('/profile')) return 4;
@@ -23,7 +23,7 @@ class CommonLayout extends StatelessWidget {
         context.go('/home');
         break;
       case 1:
-        context.go('/orders');
+        context.go('/orders/latest-orders');
         break;
       case 2:
         context.go('/add-product');

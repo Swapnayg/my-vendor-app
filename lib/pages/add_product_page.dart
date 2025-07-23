@@ -1,6 +1,5 @@
 // Same imports
 import 'dart:convert';
-import 'dart:typed_data';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart' show kIsWeb, Uint8List;
 import 'package:flutter/material.dart';
@@ -9,7 +8,6 @@ import 'package:http/http.dart' as http;
 import 'package:my_vendor_app/models/compliance.dart';
 import 'package:my_vendor_app/models/product.dart';
 import 'package:my_vendor_app/models/product_image.dart';
-import 'package:url_launcher/url_launcher_string.dart';
 
 class AddProductPage extends StatefulWidget {
   final Product? initialData;

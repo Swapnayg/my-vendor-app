@@ -1,7 +1,8 @@
 import 'package:go_router/go_router.dart';
-import 'package:my_vendor_app/data/chart_mock_data.dart';
 import 'package:my_vendor_app/models/order.dart';
 import 'package:my_vendor_app/models/product.dart';
+import 'package:my_vendor_app/models/user.dart';
+import 'package:my_vendor_app/pages/chat_page.dart';
 import 'package:my_vendor_app/pages/orders/manage-order.dart';
 import 'package:my_vendor_app/pages/orders/management.dart';
 import 'package:my_vendor_app/pages/orders/mark_order_shipped_page.dart';
@@ -12,6 +13,8 @@ import 'package:my_vendor_app/pages/orders/track.dart';
 import 'package:my_vendor_app/pages/products/commission-summary.dart';
 import 'package:my_vendor_app/pages/products/inventory.dart';
 import 'package:my_vendor_app/pages/products/management.dart';
+import 'package:my_vendor_app/pages/products/product-details.dart';
+import 'package:my_vendor_app/pages/products/product-stock.dart';
 import 'package:my_vendor_app/pages/products/top.dart';
 import 'package:my_vendor_app/pages/products/viewproductpage.dart';
 import 'package:my_vendor_app/pages/orders/latest_orders_page.dart';
@@ -71,8 +74,22 @@ final GoRouter router = GoRouter(
       builder: (context, state) => const MessagesPage(),
     ),
     GoRoute(
+      path: '/chat',
+      builder: (context, state) {
+        final extra = state.extra as Map<String, dynamic>;
+        final String ticketId = extra['ticketId'].toString(); // ✅ FIXED
+        final User user = extra['user'];
+        return ChatPage(ticketId: ticketId, user: user);
+      },
+    ),
+
+    GoRoute(
       path: '/notifications',
       builder: (context, state) => const NotificationsPage(),
+    ),
+    GoRoute(
+      path: '/tickets',
+      builder: (context, state) => const MessagesPage(),
     ),
     GoRoute(
       path: '/settings',
@@ -133,15 +150,32 @@ final GoRouter router = GoRouter(
     ),
     GoRoute(
       path: '/products/inventory',
-      builder: (context, state) => const InventoryPage(),
+      builder: (context, state) => InventoryPage(),
     ),
+
+    GoRoute(
+      path: '/products/inventory-stock',
+      name: 'inventory-stock',
+      builder: (context, state) {
+        final product = state.extra as Product;
+        return ProductStockUpdatePage(product: product);
+      },
+    ),
+
     GoRoute(
       path: '/products/management',
       builder: (context, state) => const ProductManagementPage(),
     ),
     GoRoute(
       path: '/products/top',
-      builder: (context, state) => const TopproductsPage(),
+      builder: (context, state) => const TopProductsPage(),
+    ),
+    GoRoute(
+      path: '/products/details',
+      builder: (context, state) {
+        final product = state.extra as Product;
+        return ProductDetailsPage(product: product);
+      },
     ),
   ],
 );

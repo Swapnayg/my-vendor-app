@@ -7,7 +7,7 @@ enum NotificationType {
   GENERAL,
 }
 
-class Notification {
+class NotificationModel {
   final int id;
   final String title;
   final String message;
@@ -30,7 +30,7 @@ class Notification {
   final dynamic order;
   final dynamic product;
 
-  Notification({
+  NotificationModel({
     required this.id,
     required this.title,
     required this.message,
@@ -51,8 +51,8 @@ class Notification {
     this.product,
   });
 
-  factory Notification.fromJson(Map<String, dynamic> json) {
-    return Notification(
+  factory NotificationModel.fromJson(Map<String, dynamic> json) {
+    return NotificationModel(
       id: json['id'],
       title: json['title'],
       message: json['message'],
@@ -74,6 +74,29 @@ class Notification {
       customer: json['customer'],
       order: json['order'],
       product: json['product'],
+    );
+  }
+
+  NotificationModel copyWith({bool? read}) {
+    return NotificationModel(
+      id: id,
+      title: title,
+      message: message,
+      read: read ?? this.read,
+      type: type,
+      createdAt: createdAt,
+      userId: userId,
+      vendorId: vendorId,
+      adminId: adminId,
+      customerId: customerId,
+      orderId: orderId,
+      productId: productId,
+      user: user,
+      vendor: vendor,
+      admin: admin,
+      customer: customer,
+      order: order,
+      product: product,
     );
   }
 

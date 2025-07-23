@@ -220,12 +220,7 @@ class _VendorDrawerState extends State<VendorDrawer> {
                     ),
                   ],
                   _drawerSection('Messages'),
-                  _drawerItem(
-                    context,
-                    'Message List',
-                    '/messages/list',
-                    Icons.message,
-                  ),
+                  _drawerItem(context, 'Messages', '/messages', Icons.message),
 
                   _drawerSection('Notifications'),
                   _drawerItem(
@@ -233,6 +228,14 @@ class _VendorDrawerState extends State<VendorDrawer> {
                     'Notifications',
                     '/notifications',
                     Icons.notifications,
+                  ),
+
+                  _drawerSection('Tickets'),
+                  _drawerItem(
+                    context,
+                    'Tickets',
+                    '/tickets',
+                    Icons.confirmation_number_outlined,
                   ),
 
                   _drawerSection('Support'),

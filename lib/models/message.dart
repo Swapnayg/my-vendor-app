@@ -5,6 +5,7 @@ class Message {
   final int ticketId;
   final int? userId;
   final DateTime createdAt;
+  final bool isRead; // ✅ New field
 
   Message({
     required this.id,
@@ -13,6 +14,7 @@ class Message {
     required this.ticketId,
     this.userId,
     required this.createdAt,
+    this.isRead = false, // ✅ Default value if not provided
   });
 
   factory Message.fromJson(Map<String, dynamic> json) {
@@ -23,6 +25,7 @@ class Message {
       ticketId: json['ticketId'],
       userId: json['userId'],
       createdAt: DateTime.parse(json['createdAt']),
+      isRead: json['isRead'] ?? false, // ✅ Safely handle missing value
     );
   }
 
@@ -34,6 +37,7 @@ class Message {
       'ticketId': ticketId,
       'userId': userId,
       'createdAt': createdAt.toIso8601String(),
+      'isRead': isRead, // ✅ Include in serialization
     };
   }
 }

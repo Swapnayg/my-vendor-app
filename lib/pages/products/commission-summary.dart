@@ -185,7 +185,7 @@ class _CommissionSummaryPageState extends State<CommissionSummaryPage> {
                   style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                 ),
                 const SizedBox(height: 8),
-                ..._orders.map(_buildOrderTile).toList(),
+                ..._orders.map(_buildOrderTile),
                 const SizedBox(height: 16),
                 _buildTipsCard(),
                 const SizedBox(height: 16),

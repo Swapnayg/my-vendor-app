@@ -30,9 +30,8 @@ class InvoicePage extends StatelessWidget {
     }
   }
 
+  @override
   Widget build(BuildContext context) {
-    print("orders");
-    print(order);
     final List items = order['items'];
     final total = items.fold<double>(
       0.0,
@@ -208,7 +207,7 @@ class InvoicePage extends StatelessWidget {
                       '₹${(item['price'] * item['quantity']).toStringAsFixed(2)}',
                     ),
                   );
-                }).toList(),
+                }),
                 const Divider(),
                 Align(
                   alignment: Alignment.centerRight,

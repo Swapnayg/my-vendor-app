@@ -37,8 +37,9 @@ class OrderTrackPage extends StatelessWidget {
     return CommonLayout(
       body: Column(
         children: [
+          // Top Bar
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 10),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -46,9 +47,7 @@ class OrderTrackPage extends StatelessWidget {
                   children: [
                     IconButton(
                       icon: const Icon(Icons.arrow_back),
-                      onPressed: () {
-                        context.go('/orders/latest-orders');
-                      },
+                      onPressed: () => context.go('/orders/latest-orders'),
                     ),
                     const SizedBox(width: 4),
                     const Text(
@@ -71,7 +70,7 @@ class OrderTrackPage extends StatelessWidget {
                       vertical: 10,
                     ),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(10),
                     ),
                   ),
                   onPressed: () {
@@ -84,42 +83,101 @@ class OrderTrackPage extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(height: 10),
+
           Expanded(
             child: ListView(
-              padding: const EdgeInsets.all(16.0),
+              padding: const EdgeInsets.all(16),
               children: [
                 _sectionCard(
                   title: "Order Summary",
+                  icon: Icons.receipt_long,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       _labelValue("Order ID:", mockOrder['orderId'].toString()),
-                      const SizedBox(height: 6),
+                      const SizedBox(height: 8),
                       _labelValue(
                         "Payment:",
                         mockOrder['payment'].toString(),
-                        color: Colors.green.shade600,
+                        color: Colors.green,
                       ),
-                      const SizedBox(height: 6),
+                      const SizedBox(height: 8),
                       _labelValue(
                         "Status:",
                         mockOrder['status'].toString(),
-                        color: Colors.orange.shade700,
+                        color: Colors.orange,
                       ),
                     ],
                   ),
                 ),
                 const SizedBox(height: 16),
-
+                _sectionCard(
+                  title: "Delivery Details",
+                  icon: Icons.location_on,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Icon(Icons.place, size: 18, color: Colors.deepOrange),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  "201 Orchard Road,\n#01-10, Singapore",
+                                  style: TextStyle(fontSize: 14),
+                                ),
+                                const SizedBox(height: 4),
+                                TextButton(
+                                  onPressed: () {
+                                    // Future functionality: Change address
+                                  },
+                                  style: TextButton.styleFrom(
+                                    padding: EdgeInsets.zero,
+                                    minimumSize: const Size(40, 30),
+                                    tapTargetSize:
+                                        MaterialTapTargetSize.shrinkWrap,
+                                  ),
+                                  child: const Text(
+                                    "Change address",
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      color: Colors.orange,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          Icon(Icons.timer, size: 18, color: Colors.deepOrange),
+                          const SizedBox(width: 8),
+                          const Text(
+                            "Estimated delivery in 25 mins",
+                            style: TextStyle(fontSize: 13),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
                 _sectionCard(
                   title: "Customer Information",
+                  icon: Icons.person,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        "Name:  ${(mockOrder['customer'] as Map<String, dynamic>)['name']}",
-                        style: TextStyle(fontSize: 14),
+                        "Name: ${(mockOrder['customer'] as Map)['name']}",
+                        style: const TextStyle(fontSize: 14),
                       ),
                       const SizedBox(height: 6),
                       Row(
@@ -127,8 +185,7 @@ class OrderTrackPage extends StatelessWidget {
                           Icon(Icons.email, size: 16, color: Colors.grey[600]),
                           const SizedBox(width: 6),
                           Text(
-                            (mockOrder['customer']
-                                as Map<String, dynamic>)['email'],
+                            (mockOrder['customer'] as Map)['email'],
                             style: const TextStyle(color: Colors.blue),
                           ),
                         ],
@@ -138,10 +195,7 @@ class OrderTrackPage extends StatelessWidget {
                         children: [
                           Icon(Icons.phone, size: 16, color: Colors.grey[600]),
                           const SizedBox(width: 6),
-                          Text(
-                            (mockOrder['customer']
-                                as Map<String, dynamic>)['phone'],
-                          ),
+                          Text((mockOrder['customer'] as Map)['phone']),
                         ],
                       ),
                     ],
@@ -151,24 +205,29 @@ class OrderTrackPage extends StatelessWidget {
 
                 _sectionCard(
                   title: "Items List",
+                  icon: Icons.inventory_2,
                   child: Column(
                     children: List.generate(
-                      ((mockOrder['items'] as List?)?.length ?? 0),
+                      (mockOrder['items'] as List).length,
                       (index) {
                         final item = (mockOrder['items'] as List)[index];
-                        return Padding(
-                          padding: const EdgeInsets.only(bottom: 12),
+                        return Container(
+                          margin: const EdgeInsets.only(bottom: 14),
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: Colors.grey[50],
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: Colors.grey.shade300),
+                          ),
                           child: Row(
                             children: [
-                              Container(
-                                width: 48,
-                                height: 48,
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(8),
-                                  image: DecorationImage(
-                                    image: AssetImage(item['image']),
-                                    fit: BoxFit.cover,
-                                  ),
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(8),
+                                child: Image.asset(
+                                  item['image'],
+                                  width: 50,
+                                  height: 50,
+                                  fit: BoxFit.cover,
                                 ),
                               ),
                               const SizedBox(width: 12),
@@ -178,11 +237,12 @@ class OrderTrackPage extends StatelessWidget {
                                   children: [
                                     Text(
                                       item['name'],
-                                      style: TextStyle(
+                                      style: const TextStyle(
                                         fontSize: 14,
-                                        fontWeight: FontWeight.w500,
+                                        fontWeight: FontWeight.w600,
                                       ),
                                     ),
+                                    const SizedBox(height: 4),
                                     Text(
                                       "Qty: ${item['quantity']}",
                                       style: TextStyle(
@@ -195,7 +255,10 @@ class OrderTrackPage extends StatelessWidget {
                               ),
                               Text(
                                 "₹${item['price']}",
-                                style: TextStyle(fontWeight: FontWeight.w600),
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
+                                ),
                               ),
                             ],
                           ),
@@ -207,36 +270,37 @@ class OrderTrackPage extends StatelessWidget {
 
                 const SizedBox(height: 24),
 
+                // Button Row
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
-                    // Reject Button
                     OutlinedButton(
-                      onPressed: () {
-                        // Reject logic (confirmation optional)
-                      },
+                      onPressed: () {},
                       style: OutlinedButton.styleFrom(
                         foregroundColor: Colors.white,
                         backgroundColor: Colors.orange,
                         side: BorderSide.none,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 18,
+                          vertical: 12,
+                        ),
                       ),
                       child: const Text("Reject"),
                     ),
-
-                    // Accept Order Button
                     ElevatedButton(
                       onPressed: () {
-                        // Navigate to Mark as Shipped after accepting
                         context.go('/orders/mark-shipped');
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.green,
                         foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 18,
+                          vertical: 12,
+                        ),
                       ),
                       child: const Text("Accept Order"),
                     ),
-
-                    // Mark as Shipped Button
                     ElevatedButton(
                       onPressed: () {
                         context.go('/orders/mark-shipped');
@@ -244,11 +308,13 @@ class OrderTrackPage extends StatelessWidget {
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.deepPurple,
                         foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 18,
+                          vertical: 12,
+                        ),
                       ),
                       child: const Text("Mark as Shipped"),
                     ),
-
-                    // Start Shipping Button
                     OutlinedButton(
                       onPressed: () {
                         context.go('/orders/tracking-details');
@@ -257,6 +323,10 @@ class OrderTrackPage extends StatelessWidget {
                         foregroundColor: Colors.white,
                         backgroundColor: Colors.orange,
                         side: BorderSide.none,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 18,
+                          vertical: 12,
+                        ),
                       ),
                       child: const Text("Start Shipping"),
                     ),
@@ -270,28 +340,30 @@ class OrderTrackPage extends StatelessWidget {
     );
   }
 
-  Widget _sectionCard({required String title, required Widget child}) {
+  Widget _sectionCard({
+    required String title,
+    required Widget child,
+    required IconData icon,
+  }) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade300),
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.shade200,
+            blurRadius: 6,
+            offset: const Offset(0, 3),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(
-                title.contains("Order")
-                    ? Icons.receipt_long
-                    : title.contains("Customer")
-                    ? Icons.person
-                    : Icons.inventory_2,
-                size: 18,
-                color: Colors.grey[700],
-              ),
+              Icon(icon, size: 18, color: Colors.deepOrange),
               const SizedBox(width: 6),
               Text(
                 title,
@@ -317,12 +389,12 @@ class OrderTrackPage extends StatelessWidget {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
           decoration: BoxDecoration(
-            color: (color ?? Colors.grey[200])?.withOpacity(0.2),
+            color: (color ?? Colors.grey[200])?.withOpacity(0.15),
             borderRadius: BorderRadius.circular(20),
           ),
           child: Text(
             value,
-            style: TextStyle(color: color ?? Colors.black, fontSize: 12),
+            style: TextStyle(color: color ?? Colors.black87, fontSize: 13),
           ),
         ),
       ],

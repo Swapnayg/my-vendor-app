@@ -14,10 +14,10 @@ class ProductSales {
   ProductSales({required this.name, required this.sales});
 }
 
-class User {
+class UserModel {
   final DateTime joinedDate;
 
-  User({required this.joinedDate});
+  UserModel({required this.joinedDate});
 }
 
 final List<Order_Mock> mockOrders = [
@@ -38,7 +38,7 @@ final List<ProductSales> mockProducts = [
   ProductSales(name: 'Product E', sales: 90),
 ];
 
-final List<User> mockUsers = [
+final List<UserModel> mockUsers = [
   for (int i = 0; i < 50; i++)
-    User(joinedDate: DateTime.now().subtract(Duration(days: i * 3))),
+    UserModel(joinedDate: DateTime.now().subtract(Duration(days: i * 3))),
 ];

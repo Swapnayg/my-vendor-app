@@ -8,6 +8,7 @@ class User {
   final String email;
   final String username;
   final String password;
+  final String? avatarUrl;
   final String? tempPassword;
   final UserRole role;
   final bool isActive;
@@ -16,7 +17,7 @@ class User {
 
   // Relations (optional or lists)
   final List<Review>? reviews;
-  final List<Notification>? notifications;
+  final List<NotificationModel>? notifications;
 
   // Stub placeholders for referenced models
   // You can replace these with real classes once available
@@ -33,6 +34,7 @@ class User {
 
   User({
     required this.id,
+    this.avatarUrl,
     required this.email,
     required this.username,
     required this.password,
@@ -77,8 +79,8 @@ class User {
               : null,
       notifications:
           json['notification'] != null
-              ? List<Notification>.from(
-                json['notification'].map((x) => Notification.fromJson(x)),
+              ? List<NotificationModel>.from(
+                json['notification'].map((x) => NotificationModel.fromJson(x)),
               )
               : null,
       vendor: json['vendor'],

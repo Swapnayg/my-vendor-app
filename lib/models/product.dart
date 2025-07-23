@@ -41,7 +41,7 @@ class Product {
   final ProductCategory? category;
   final List<Compliance>? compliance;
   final List<OrderItem> orderItems;
-  final List<Notification> notifications;
+  final List<NotificationModel> notifications;
   final List<ProductImage> images;
   final List<Review> reviews;
 
@@ -97,7 +97,7 @@ class Product {
         [],
     notifications:
         (json['notifications'] as List<dynamic>?)
-            ?.map((e) => Notification.fromJson(e))
+            ?.map((e) => NotificationModel.fromJson(e))
             .toList() ??
         [],
     images:

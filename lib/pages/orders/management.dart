@@ -280,7 +280,7 @@ class _OrderManagementPageState extends State<OrderManagementPage> {
         order.items?.isNotEmpty == true ? order.items!.first : null;
     final product = firstItem?.product;
     final productImage =
-        product?.images?.isNotEmpty == true ? product!.images!.first.url : null;
+        product?.images.isNotEmpty == true ? product!.images.first.url : null;
 
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
