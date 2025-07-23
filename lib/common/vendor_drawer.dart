@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class VendorDrawer extends StatefulWidget {
   final String activeRoute;
@@ -289,8 +290,13 @@ class _VendorDrawerState extends State<VendorDrawer> {
                   fontWeight: FontWeight.w500,
                 ),
               ),
-              onTap: () {
-                Navigator.pop(context);
+              onTap: () async {
+                final prefs = await SharedPreferences.getInstance();
+                await prefs.clear();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Logged out successfully')),
+                );
+                context.go('/login');
               },
             ),
             const SizedBox(height: 12),

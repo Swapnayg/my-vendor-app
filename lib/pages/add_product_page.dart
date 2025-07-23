@@ -3,8 +3,10 @@ import 'dart:convert';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart' show kIsWeb, Uint8List;
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:http/http.dart' as http;
+import 'package:my_vendor_app/common/common_layout.dart';
 import 'package:my_vendor_app/models/compliance.dart';
 import 'package:my_vendor_app/models/product.dart';
 import 'package:my_vendor_app/models/product_image.dart';
@@ -236,10 +238,7 @@ class _AddProductPageState extends State<AddProductPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(isEditMode ? 'Update Product' : 'Add Product'),
-      ),
+    return CommonLayout(
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Form(
@@ -247,6 +246,25 @@ class _AddProductPageState extends State<AddProductPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              Row(
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.arrow_back),
+                    onPressed: () => context.go('/products/management'),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    isEditMode ? 'Update Product' : 'Add Product',
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 20),
+
               TextFormField(
                 initialValue: _name,
                 decoration: const InputDecoration(labelText: 'Product Name'),
@@ -258,6 +276,7 @@ class _AddProductPageState extends State<AddProductPage> {
                             : null,
               ),
               const SizedBox(height: 10),
+
               TextFormField(
                 initialValue: _description,
                 decoration: const InputDecoration(labelText: 'Description'),
@@ -269,6 +288,7 @@ class _AddProductPageState extends State<AddProductPage> {
                             : null,
               ),
               const SizedBox(height: 10),
+
               TextFormField(
                 initialValue: _basePrice.toString(),
                 keyboardType: TextInputType.number,
@@ -284,6 +304,7 @@ class _AddProductPageState extends State<AddProductPage> {
                             : null,
               ),
               const SizedBox(height: 10),
+
               TextFormField(
                 initialValue: _taxRate.toString(),
                 keyboardType: TextInputType.number,
@@ -299,13 +320,14 @@ class _AddProductPageState extends State<AddProductPage> {
                             : null,
               ),
               const SizedBox(height: 10),
+
               TextFormField(
                 controller: _priceController,
                 readOnly: true,
                 decoration: const InputDecoration(labelText: 'Price'),
               ),
-
               const SizedBox(height: 10),
+
               TextFormField(
                 initialValue: _stock.toString(),
                 keyboardType: TextInputType.number,
@@ -317,6 +339,7 @@ class _AddProductPageState extends State<AddProductPage> {
                             ? 'Enter valid stock'
                             : null,
               ),
+
               const SizedBox(height: 20),
               const Text('Images:'),
               Wrap(
@@ -354,6 +377,7 @@ class _AddProductPageState extends State<AddProductPage> {
                     ),
                 ],
               ),
+
               const SizedBox(height: 20),
               const Text('Compliances:'),
               Column(
@@ -364,7 +388,6 @@ class _AddProductPageState extends State<AddProductPage> {
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Type input
                         Expanded(
                           flex: 2,
                           child: TextFormField(
@@ -377,7 +400,6 @@ class _AddProductPageState extends State<AddProductPage> {
                         ),
                         const SizedBox(width: 10),
 
-                        // Upload button and filename
                         Expanded(
                           flex: 3,
                           child: Column(
@@ -389,10 +411,7 @@ class _AddProductPageState extends State<AddProductPage> {
                               ),
                               const SizedBox(height: 4),
                               if (item['uploading'] == true)
-                                const Padding(
-                                  padding: EdgeInsets.only(top: 4),
-                                  child: LinearProgressIndicator(),
-                                )
+                                const LinearProgressIndicator()
                               else if (item['fileName'] != null &&
                                   item['fileName'].isNotEmpty)
                                 Text(
@@ -403,7 +422,6 @@ class _AddProductPageState extends State<AddProductPage> {
                           ),
                         ),
 
-                        // Delete button
                         IconButton(
                           icon: const Icon(Icons.delete, color: Colors.red),
                           onPressed:
@@ -428,8 +446,8 @@ class _AddProductPageState extends State<AddProductPage> {
                 child: ElevatedButton(
                   onPressed: _saveProduct,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.orange, // Background color
-                    foregroundColor: Colors.white, // Text (and icon) color
+                    backgroundColor: Colors.orange,
+                    foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(
                       horizontal: 32,
                       vertical: 14,

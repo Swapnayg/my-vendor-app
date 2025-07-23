@@ -1,6 +1,7 @@
 import 'package:go_router/go_router.dart';
 import 'package:my_vendor_app/models/order.dart';
 import 'package:my_vendor_app/models/product.dart';
+import 'package:my_vendor_app/models/ticket.dart';
 import 'package:my_vendor_app/models/user.dart';
 import 'package:my_vendor_app/pages/chat_page.dart';
 import 'package:my_vendor_app/pages/orders/manage-order.dart';
@@ -18,6 +19,9 @@ import 'package:my_vendor_app/pages/products/product-stock.dart';
 import 'package:my_vendor_app/pages/products/top.dart';
 import 'package:my_vendor_app/pages/products/viewproductpage.dart';
 import 'package:my_vendor_app/pages/orders/latest_orders_page.dart';
+import 'package:my_vendor_app/pages/ticket_details.dart';
+import 'package:my_vendor_app/pages/ticket_submission.dart';
+import 'package:my_vendor_app/pages/tickets.dart';
 
 import 'screens/splash_screen.dart';
 import 'screens/welcome_screen.dart';
@@ -89,8 +93,22 @@ final GoRouter router = GoRouter(
     ),
     GoRoute(
       path: '/tickets',
-      builder: (context, state) => const MessagesPage(),
+      builder: (context, state) => const TicketManagementPage(),
     ),
+
+    GoRoute(
+      path: '/tickets/details',
+      builder: (context, state) {
+        final ticket = Ticket.fromJson(state.extra as Map<String, dynamic>);
+        return TicketDetailsPage(ticket: ticket);
+      },
+    ),
+
+    GoRoute(
+      path: '/tickets/raise',
+      builder: (context, state) => const RaiseTicketPage(),
+    ),
+
     GoRoute(
       path: '/settings',
       builder: (context, state) => const SettingsPage(),

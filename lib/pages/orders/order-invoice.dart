@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:my_vendor_app/common/common_layout.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
@@ -31,6 +32,7 @@ class InvoicePage extends StatelessWidget {
   }
 
   @override
+  @override
   Widget build(BuildContext context) {
     final List items = order['items'];
     final total = items.fold<double>(
@@ -44,20 +46,7 @@ class InvoicePage extends StatelessWidget {
       DateTime.tryParse(order['createdAt'] ?? '') ?? DateTime.now(),
     );
 
-    return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () {
-            if (source == 'management') {
-              context.go('/orders/management');
-            } else {
-              context.go('/orders/latest-orders');
-            }
-          },
-        ),
-        title: const Text('Invoice Details'),
-      ),
+    return CommonLayout(
       body: LayoutBuilder(
         builder: (context, constraints) {
           final isMobile = constraints.maxWidth < 600;
@@ -67,117 +56,103 @@ class InvoicePage extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // Back Button and Title Row
+                Row(
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.arrow_back),
+                      onPressed: () {
+                        if (source == 'management') {
+                          context.go('/orders/management');
+                        } else {
+                          context.go('/orders/latest-orders');
+                        }
+                      },
+                    ),
+                    const SizedBox(width: 8),
+                    const Text(
+                      'Invoice Details',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+
+                // Order Details
                 if (!isMobile)
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      // Order ID and Date Row
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Order ID',
-                                style: Theme.of(context).textTheme.labelMedium,
-                              ),
-                              Text(
-                                '${order['orderId']}',
-                                style: Theme.of(context).textTheme.titleLarge,
-                              ),
-                            ],
+                          Text(
+                            'Order ID',
+                            style: Theme.of(context).textTheme.labelMedium,
                           ),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            children: [
-                              Text(
-                                'Date',
-                                style: Theme.of(context).textTheme.labelMedium,
-                              ),
-                              Text(formattedDate),
-                            ],
+                          Text(
+                            '${order['orderId']}',
+                            style: Theme.of(context).textTheme.titleLarge,
                           ),
                         ],
                       ),
-                      const SizedBox(height: 8),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
-                          const Text(
-                            'Payment Status:',
-                            style: TextStyle(fontWeight: FontWeight.bold),
+                          Text(
+                            'Date',
+                            style: Theme.of(context).textTheme.labelMedium,
                           ),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 6,
-                            ),
-                            decoration: BoxDecoration(
-                              color: _getStatusColor(
-                                order['status'],
-                              ), // dynamic background
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: Text(
-                              order['status'], // assuming this holds values like 'PENDING', etc.
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
+                          Text(formattedDate),
                         ],
                       ),
                     ],
                   )
-                else
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Order ID',
-                        style: Theme.of(context).textTheme.labelMedium,
-                      ),
-                      Text(
-                        '${order['orderId']}',
-                        style: Theme.of(context).textTheme.titleLarge,
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Date',
-                        style: Theme.of(context).textTheme.labelMedium,
-                      ),
-                      Text(formattedDate),
-                      const SizedBox(height: 8),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text(
-                            'Payment Status:',
-                            style: TextStyle(fontWeight: FontWeight.bold),
-                          ),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 6,
-                            ),
-                            decoration: BoxDecoration(
-                              color: _getStatusColor(order['payment']),
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: Text(
-                              order['payment'],
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
+                else ...[
+                  Text(
+                    'Order ID',
+                    style: Theme.of(context).textTheme.labelMedium,
                   ),
+                  Text(
+                    '${order['orderId']}',
+                    style: Theme.of(context).textTheme.titleLarge,
+                  ),
+                  const SizedBox(height: 4),
+                  Text('Date', style: Theme.of(context).textTheme.labelMedium),
+                  Text(formattedDate),
+                ],
+
+                const SizedBox(height: 8),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'Payment Status:',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: _getStatusColor(order['payment']),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        order['payment'],
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+
                 const SizedBox(height: 16),
                 Text(
                   'Customer Details',
@@ -190,9 +165,11 @@ class InvoicePage extends StatelessWidget {
                 Text('${customer['email']}'),
                 Text('Phone', style: Theme.of(context).textTheme.labelMedium),
                 Text('${customer['phone']}'),
+
                 const SizedBox(height: 16),
                 Text('Items', style: Theme.of(context).textTheme.titleMedium),
                 const SizedBox(height: 8),
+
                 ...items.map<Widget>((item) {
                   return ListTile(
                     leading: Image.asset(
@@ -208,6 +185,7 @@ class InvoicePage extends StatelessWidget {
                     ),
                   );
                 }),
+
                 const Divider(),
                 Align(
                   alignment: Alignment.centerRight,
@@ -216,6 +194,7 @@ class InvoicePage extends StatelessWidget {
                     style: Theme.of(context).textTheme.titleLarge,
                   ),
                 ),
+
                 const SizedBox(height: 20),
                 Center(
                   child: ElevatedButton.icon(
@@ -226,7 +205,7 @@ class InvoicePage extends StatelessWidget {
                       style: TextStyle(color: Colors.white),
                     ),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.pink, // Button background
+                      backgroundColor: Colors.pink,
                       padding: const EdgeInsets.symmetric(
                         horizontal: 20,
                         vertical: 12,

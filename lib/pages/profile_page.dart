@@ -7,12 +7,7 @@ class ProfilePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const CommonLayout(
-      body: Center(
-        child: Text(
-          'Profile Page',
-          style: TextStyle(fontSize: 24),
-        ),
-      ),
+      body: Center(child: Text('Profile Page', style: TextStyle(fontSize: 24))),
     );
   }
 }
