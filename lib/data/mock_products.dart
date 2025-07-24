@@ -23,6 +23,8 @@ final mockProducts = [
       phone: '',
       address: '',
       status: VendorStatus.PENDING,
+      userId: 1,
+      createdAt: DateTime.now(),
     ),
     category: ProductCategory(id: 1, name: 'Electronics'),
     images: [
@@ -56,6 +58,8 @@ final mockProducts = [
       phone: '',
       address: '',
       status: VendorStatus.APPROVED,
+      userId: 1,
+      createdAt: DateTime.now(),
     ),
     category: ProductCategory(id: 2, name: 'Clothing'),
     images: [
@@ -89,6 +93,8 @@ final mockProducts = [
       phone: '',
       address: '',
       status: VendorStatus.REJECTED,
+      userId: 1,
+      createdAt: DateTime.now(),
     ),
     category: ProductCategory(id: 3, name: 'Food'),
     images: [
@@ -122,6 +128,8 @@ final mockProducts = [
       phone: '',
       address: '',
       status: VendorStatus.REJECTED,
+      userId: 1,
+      createdAt: DateTime.now(),
     ),
     category: ProductCategory(id: 1, name: 'Electronics'),
     images: [

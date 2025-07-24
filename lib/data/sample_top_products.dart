@@ -73,6 +73,8 @@ List<Product> sampleProducts = [
       phone: '',
       address: '',
       status: VendorStatus.APPROVED,
+      userId: 1,
+      createdAt: DateTime.now(),
     ),
   ),
 
@@ -136,6 +138,8 @@ List<Product> sampleProducts = [
       phone: '',
       address: '',
       status: VendorStatus.APPROVED,
+      userId: 1,
+      createdAt: DateTime.now(),
     ),
   ),
 
@@ -191,6 +195,8 @@ List<Product> sampleProducts = [
       phone: '',
       address: '',
       status: VendorStatus.APPROVED,
+      userId: 1,
+      createdAt: DateTime.now(),
     ),
   ),
 
@@ -254,6 +260,8 @@ List<Product> sampleProducts = [
       phone: '',
       address: '',
       status: VendorStatus.PENDING,
+      userId: 1,
+      createdAt: DateTime.now(),
     ),
   ),
   // Add to your existing `sampleProducts` list:
@@ -317,6 +325,8 @@ List<Product> sampleProducts = [
       phone: '',
       address: '',
       status: VendorStatus.APPROVED,
+      userId: 1,
+      createdAt: DateTime.now(),
     ),
   ),
 
@@ -388,6 +398,8 @@ List<Product> sampleProducts = [
       phone: '',
       address: '',
       status: VendorStatus.APPROVED,
+      userId: 1,
+      createdAt: DateTime.now(),
     ),
   ),
 ];
