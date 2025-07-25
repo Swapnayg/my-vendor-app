@@ -3,7 +3,9 @@ import '/common/common_layout.dart';
 import 'package:go_router/go_router.dart';
 
 class OrderTrackPage extends StatelessWidget {
-  const OrderTrackPage({super.key});
+  final String orderId;
+
+  const OrderTrackPage({super.key, required this.orderId});
 
   @override
   Widget build(BuildContext context) {
@@ -47,7 +49,11 @@ class OrderTrackPage extends StatelessWidget {
                   children: [
                     IconButton(
                       icon: const Icon(Icons.arrow_back),
-                      onPressed: () => context.go('/orders/latest-orders'),
+                      onPressed:
+                          () => context.go(
+                            '/orders/latest-orders',
+                            extra: {'orderId': orderId},
+                          ),
                     ),
                     const SizedBox(width: 4),
                     const Text(

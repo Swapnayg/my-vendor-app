@@ -5,7 +5,9 @@ import '/common/common_layout.dart';
 import 'package:go_router/go_router.dart';
 
 class TrackingDetailsPage extends StatelessWidget {
-  const TrackingDetailsPage({super.key});
+  final String orderId;
+
+  const TrackingDetailsPage({super.key, required this.orderId});
 
   @override
   Widget build(BuildContext context) {
@@ -31,7 +33,7 @@ class TrackingDetailsPage extends StatelessWidget {
                 IconButton(
                   icon: const Icon(Icons.arrow_back),
                   onPressed: () {
-                    context.go('/orders/track');
+                    context.go('/orders/track', extra: {'orderId': orderId});
                   },
                 ),
                 const SizedBox(width: 4),

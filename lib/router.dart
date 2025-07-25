@@ -145,11 +145,15 @@ final GoRouter router = GoRouter(
       path: '/orders/management',
       builder: (context, state) => const OrderManagementPage(),
     ),
+
     GoRoute(
       path: '/orders/mark-shipped',
-      builder: (context, state) => const MarkOrderShippedPage(),
+      builder: (context, state) {
+        final data = state.extra as Map<String, dynamic>;
+        final orderId = data['orderId'] as String;
+        return MarkOrderShippedPage(orderId: orderId);
+      },
     ),
-
     GoRoute(
       path: '/orders/view',
       builder: (context, state) {
@@ -161,7 +165,11 @@ final GoRouter router = GoRouter(
 
     GoRoute(
       path: '/orders/tracking-details',
-      builder: (context, state) => const TrackingDetailsPage(),
+      builder: (context, state) {
+        final data = state.extra as Map<String, dynamic>;
+        final orderId = data['orderId'] as String;
+        return OrderTrackPage(orderId: orderId);
+      },
     ),
     GoRoute(
       path: '/orders/sales-revenue',
@@ -169,8 +177,13 @@ final GoRouter router = GoRouter(
     ),
     GoRoute(
       path: '/orders/track',
-      builder: (context, state) => const OrderTrackPage(),
+      builder: (context, state) {
+        final data = state.extra as Map<String, dynamic>;
+        final orderId = data['orderId'] as String;
+        return OrderTrackPage(orderId: orderId);
+      },
     ),
+
     GoRoute(
       path: '/orders/invoice',
       builder: (context, state) {

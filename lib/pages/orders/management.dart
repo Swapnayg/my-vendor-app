@@ -5,6 +5,8 @@ import 'package:my_vendor_app/models/order_item.dart';
 import 'package:my_vendor_app/models/payment.dart';
 import 'package:my_vendor_app/models/product.dart';
 import 'package:my_vendor_app/models/product_image.dart';
+import 'package:my_vendor_app/services/order_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '/models/order.dart'; // Adjust this import based on your actual path
 import 'package:go_router/go_router.dart';
 
@@ -40,84 +42,27 @@ class _OrderManagementPageState extends State<OrderManagementPage> {
 
   void _fetchOrders() async {
     setState(() => _isLoading = true);
-    await Future.delayed(const Duration(seconds: 1)); // Mock network delay
 
-    final newOrders = List.generate(10, (i) {
-      final orderId = i + _orders.length + 1000;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('token');
 
-      // Generate 3 mock images per product
-      final List<ProductImage> images = List.generate(3, (j) {
-        return ProductImage(
-          id: j,
-          url: 'https://source.unsplash.com/random/200x200?sig=${i * 10 + j}',
-          productId: i,
-          createdAt: DateTime.now().subtract(Duration(minutes: j * 10)),
-        );
+      if (token == null) {
+        throw Exception('Authentication token not found');
+      }
+
+      final fetchedOrders = await OrderService.fetchOrders(token);
+      setState(() {
+        _orders.clear();
+        _orders.addAll(fetchedOrders);
       });
-
-      images.sort((a, b) => b.createdAt.compareTo(a.createdAt));
-      final latestImageUrl = images.first.url;
-
-      final product = Product(
-        id: i,
-        name: 'Product ${i + 1}',
-        images: images,
-        description: '',
-        price: 0.0,
-        basePrice: 0.0,
-        taxRate: 0.0,
-        stock: 100,
-        vendorId: 1,
-        status: ProductStatus.approved,
-        createdAt: DateTime.now().subtract(Duration(days: i * 2)),
-        updatedAt: DateTime.now().subtract(Duration(days: i * 2)),
-      );
-
-      return Order(
-        id: orderId,
-        customerId: 1,
-        vendorId: 2,
-        payment: Payment(
-          id: orderId,
-          orderId: orderId,
-          amount: 100.0 + i,
-          method: 'Cash',
-          createdAt: DateTime.now().subtract(Duration(days: i * 2)),
-          status: PaymentStatus.PAID,
-        ),
-        vendor: {'businessName': 'Vendor ${i + 1}'},
-        status: OrderStatus.values[i % OrderStatus.values.length],
-        subTotal: 100.0 + i,
-        taxTotal: 10.0,
-        shippingCharge: 5.0,
-        total: 115.0 + i,
-        createdAt: DateTime.now().subtract(Duration(days: i * 2)),
-        items: [
-          OrderItem(
-            id: i * 10,
-            orderId: orderId,
-            productId: i,
-            quantity: 2 + i,
-            basePrice: 50.0,
-            taxRate: 0.1,
-            taxAmount: 5.0,
-            price: 55.0,
-            product: product,
-          ),
-        ],
-
-        customer: {
-          'name': 'Customer ${i + 1}',
-          'email': 'customer${i + 1}@example.com',
-          'phone': '+91 90000${i + 1000}',
-        },
-      );
-    });
-
-    setState(() {
-      _orders.addAll(newOrders);
-      _isLoading = false;
-    });
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error fetching orders: $e')));
+    } finally {
+      setState(() => _isLoading = false);
+    }
   }
 
   List<Order> get _filteredOrders {
