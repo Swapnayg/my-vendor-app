@@ -19,6 +19,11 @@ import 'package:my_vendor_app/pages/products/product-stock.dart';
 import 'package:my_vendor_app/pages/products/top.dart';
 import 'package:my_vendor_app/pages/products/viewproductpage.dart';
 import 'package:my_vendor_app/pages/orders/latest_orders_page.dart';
+import 'package:my_vendor_app/pages/profile/edit_address_details_page.dart';
+import 'package:my_vendor_app/pages/profile/edit_business_details_page.dart';
+import 'package:my_vendor_app/pages/profile/edit_contact_details_page.dart';
+import 'package:my_vendor_app/pages/profile/edit_kyc_details_page.dart';
+import 'package:my_vendor_app/pages/profile/edit_zone_details_page.dart';
 import 'package:my_vendor_app/pages/ticket_details.dart';
 import 'package:my_vendor_app/pages/ticket_submission.dart';
 import 'package:my_vendor_app/pages/tickets.dart';
@@ -31,7 +36,6 @@ import 'pages/home_page.dart';
 import 'pages/add_product_page.dart';
 import 'pages/reports_page.dart';
 import 'pages/profile_page.dart';
-import 'pages/my_products_page.dart';
 import 'pages/messages_page.dart';
 import 'pages/notifications_page.dart';
 import 'pages/settings_page.dart';
@@ -70,8 +74,24 @@ final GoRouter router = GoRouter(
     GoRoute(path: '/reports', builder: (context, state) => const ReportsPage()),
     GoRoute(path: '/profile', builder: (context, state) => const ProfilePage()),
     GoRoute(
-      path: '/products',
-      builder: (context, state) => const MyProductsPage(),
+      path: '/vendor/edit/business',
+      builder: (context, state) => const EditBusinessDetailsPage(),
+    ),
+    GoRoute(
+      path: '/vendor/edit/contact',
+      builder: (context, state) => const EditContactDetailsPage(),
+    ),
+    GoRoute(
+      path: '/vendor/edit/address',
+      builder: (context, state) => const EditAddressPage(),
+    ),
+    GoRoute(
+      path: '/vendor/edit/zone-category',
+      builder: (context, state) => const EditZoneCategoryPage(),
+    ),
+    GoRoute(
+      path: '/vendor/edit/kyc',
+      builder: (context, state) => const EditKYCPage(),
     ),
     GoRoute(
       path: '/messages',
