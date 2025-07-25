@@ -1,5 +1,7 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 class VendorDrawer extends StatefulWidget {
@@ -11,11 +13,9 @@ class VendorDrawer extends StatefulWidget {
 }
 
 class _VendorDrawerState extends State<VendorDrawer> {
-  static const Color highlightColor = Color(0xFFFFC300); // Badge color
-  static const Color sectionBackground = Color(0xFFFFF0CC); // Yellowish tone
-  static const Color highlightBackground = Color(
-    0xFFFFE5A0,
-  ); // Slightly darker for active
+  static const Color highlightColor = Color(0xFFFFC300);
+  static const Color sectionBackground = Color(0xFFFFF0CC);
+  static const Color highlightBackground = Color(0xFFFFE5A0);
   static const Color logoutColor = Colors.red;
   static final Color iconColor = Colors.grey[600]!;
 
@@ -25,6 +25,48 @@ class _VendorDrawerState extends State<VendorDrawer> {
     'Support': false,
     'Settings': false,
   };
+
+  String businessName = '';
+  String email = '';
+  String profileImage = '';
+  int unreadMessages = 0;
+  int unreadNotifications = 0;
+  int openTickets = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    fetchVendorProfileData();
+  }
+
+  Future<void> fetchVendorProfileData() async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('token');
+
+    if (token == null) return;
+
+    final response = await http.get(
+      Uri.parse(
+        'https://vendor-admin-portal.netlify.app/api/MobileApp/vendor/profile',
+      ),
+      headers: {'Authorization': 'Bearer $token'},
+    );
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+
+      setState(() {
+        businessName = data['businessName'] ?? '';
+        email = data['email'] ?? '';
+        profileImage = data['profileImage'] ?? '';
+        unreadMessages = data['unreadMessages'] ?? 0;
+        unreadNotifications = data['unreadNotifications'] ?? 0;
+        openTickets = data['openTickets'] ?? 0;
+      });
+    } else {
+      debugPrint('Failed to load profile: ${response.body}');
+    }
+  }
 
   Widget _buildBadge(int count) {
     return Container(
@@ -128,27 +170,34 @@ class _VendorDrawerState extends State<VendorDrawer> {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Row(
-                children: const [
+                children: [
                   CircleAvatar(
                     radius: 28,
-                    backgroundImage: AssetImage('assets/images/upload.png'),
+                    backgroundImage:
+                        profileImage.isNotEmpty
+                            ? NetworkImage(profileImage)
+                            : const AssetImage('assets/images/upload.png')
+                                as ImageProvider,
                   ),
-                  SizedBox(width: 12),
+                  const SizedBox(width: 12),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'MarketFlow Inc.',
-                          style: TextStyle(
+                          businessName,
+                          style: const TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 16,
                           ),
                         ),
-                        SizedBox(height: 2),
+                        const SizedBox(height: 2),
                         Text(
-                          'support@marketflow.com',
-                          style: TextStyle(fontSize: 13, color: Colors.black54),
+                          email,
+                          style: const TextStyle(
+                            fontSize: 13,
+                            color: Colors.black54,
+                          ),
                         ),
                       ],
                     ),
@@ -189,12 +238,6 @@ class _VendorDrawerState extends State<VendorDrawer> {
 
                   _drawerSection('My Products'),
                   if (expandedSections['My Products'] == true) ...[
-                    // _drawerItem(
-                    //   context,
-                    //   'Add New Product',
-                    //   '/add-product',
-                    //   Icons.add_box,
-                    // ),
                     _drawerItem(
                       context,
                       'Product Management',
@@ -220,8 +263,15 @@ class _VendorDrawerState extends State<VendorDrawer> {
                       Icons.monetization_on,
                     ),
                   ],
+
                   _drawerSection('Messages'),
-                  _drawerItem(context, 'Messages', '/messages', Icons.message),
+                  _drawerItem(
+                    context,
+                    'Messages',
+                    '/messages',
+                    Icons.message,
+                    badgeCount: unreadMessages,
+                  ),
 
                   _drawerSection('Notifications'),
                   _drawerItem(
@@ -229,6 +279,7 @@ class _VendorDrawerState extends State<VendorDrawer> {
                     'Notifications',
                     '/notifications',
                     Icons.notifications,
+                    badgeCount: unreadNotifications,
                   ),
 
                   _drawerSection('Tickets'),
@@ -237,6 +288,7 @@ class _VendorDrawerState extends State<VendorDrawer> {
                     'Tickets',
                     '/tickets',
                     Icons.confirmation_number_outlined,
+                    badgeCount: openTickets,
                   ),
 
                   _drawerSection('Support'),

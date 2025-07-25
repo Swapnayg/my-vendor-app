@@ -121,8 +121,80 @@ class _ProfilePageState extends State<ProfilePage> {
                     ),
                     const SizedBox(height: 20),
                     TextButton.icon(
-                      onPressed: () {
-                        // Add deletion logic here
+                      onPressed: () async {
+                        final confirmed = await showDialog<bool>(
+                          context: context,
+                          builder:
+                              (ctx) => AlertDialog(
+                                title: const Text("Confirm Delete"),
+                                content: const Text(
+                                  "Are you sure you want to delete your account? This action is irreversible.",
+                                ),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () => Navigator.pop(ctx, false),
+                                    child: const Text("Cancel"),
+                                  ),
+                                  TextButton(
+                                    onPressed: () => Navigator.pop(ctx, true),
+                                    child: const Text(
+                                      "Delete",
+                                      style: TextStyle(color: Colors.red),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                        );
+
+                        if (confirmed == true) {
+                          try {
+                            final prefs = await SharedPreferences.getInstance();
+                            final token = prefs.getString('token');
+
+                            if (token == null) {
+                              throw Exception("Token not found");
+                            }
+
+                            final res = await http.post(
+                              Uri.parse(
+                                'https://vendor-admin-portal.netlify.app/api/MobileApp/vendor/delete-vendor',
+                              ),
+                              headers: {
+                                'Authorization': 'Bearer $token',
+                                'Content-Type': 'application/json',
+                              },
+                            );
+
+                            final result = jsonDecode(res.body);
+                            if (res.statusCode == 200) {
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text(
+                                      "Account deletion requested successfully",
+                                    ),
+                                  ),
+                                );
+                                prefs.clear(); // Log out the user
+                                context.go(
+                                  '/login',
+                                ); // Redirect to login or welcome screen
+                              }
+                            } else {
+                              throw Exception(
+                                result['error'] ?? "Failed to delete account",
+                              );
+                            }
+                          } catch (e) {
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text("Error: ${e.toString()}"),
+                                ),
+                              );
+                            }
+                          }
+                        }
                       },
                       icon: const Icon(Icons.delete_outline, color: Colors.red),
                       label: const Text(
