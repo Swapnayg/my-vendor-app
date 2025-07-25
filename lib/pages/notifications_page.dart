@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:my_vendor_app/common/common_layout.dart';
 import 'package:my_vendor_app/models/notification.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 
 class NotificationsPage extends StatefulWidget {
   const NotificationsPage({super.key});
@@ -16,54 +19,45 @@ class _NotificationsPageState extends State<NotificationsPage> {
   String searchQuery = '';
   bool showUnreadOnly = false;
   bool sortDescending = true;
+  bool isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    allNotifications = _mockNotifications();
+    fetchNotifications();
   }
 
-  List<NotificationModel> _mockNotifications() {
-    final now = DateTime.now();
-    return [
-      NotificationModel(
-        id: 1,
-        title: "Order #1234 Shipped",
-        message: "Your package is on its way.",
-        type: NotificationType.ORDER_UPDATE,
-        createdAt: now.subtract(const Duration(minutes: 5)),
-      ),
-      NotificationModel(
-        id: 2,
-        title: "Product Out of Stock",
-        message: "Product X has gone out of stock.",
-        type: NotificationType.PRODUCT_STATUS,
-        createdAt: now.subtract(const Duration(hours: 1)),
-      ),
-      NotificationModel(
-        id: 3,
-        title: "Vendor Registration Approved",
-        message: "Your vendor registration has been approved.",
-        type: NotificationType.VENDOR_APPROVAL,
-        createdAt: now.subtract(const Duration(hours: 3)),
-      ),
-      NotificationModel(
-        id: 4,
-        title: "System Maintenance Alert",
-        message: "Scheduled maintenance tomorrow at 2 AM.",
-        type: NotificationType.ADMIN_ALERT,
-        read: true,
-        createdAt: now.subtract(const Duration(days: 1)),
-      ),
-      NotificationModel(
-        id: 5,
-        title: "Welcome to the platform!",
-        message: "Your account has been successfully created.",
-        type: NotificationType.GENERAL,
-        read: true,
-        createdAt: now.subtract(const Duration(days: 2)),
-      ),
-    ];
+  Future<void> fetchNotifications() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('token') ?? '';
+
+      final response = await http.get(
+        Uri.parse(
+          'https://vendor-admin-portal.netlify.app/api/MobileApp/vendor/notifications',
+        ),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final jsonData = jsonDecode(response.body);
+        final List<dynamic> data = jsonData['data'];
+
+        setState(() {
+          allNotifications =
+              data.map((n) => NotificationModel.fromJson(n)).toList();
+          isLoading = false;
+        });
+      } else {
+        throw Exception("Failed to load notifications");
+      }
+    } catch (e) {
+      print("Error fetching notifications: $e");
+      setState(() => isLoading = false);
+    }
   }
 
   void _openFilterPopup() {
@@ -121,7 +115,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
   }
 
   List<NotificationModel> get filteredNotifications {
-    List<NotificationModel> filtered = allNotifications;
+    List<NotificationModel> filtered = [...allNotifications];
 
     if (selectedType != null) {
       filtered = filtered.where((n) => n.type == selectedType).toList();
@@ -183,10 +177,6 @@ class _NotificationsPageState extends State<NotificationsPage> {
                   borderRadius: BorderRadius.circular(12),
                   borderSide: const BorderSide(color: Colors.grey),
                 ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: Colors.grey),
-                ),
               ),
               onChanged: (val) => setState(() => searchQuery = val),
             ),
@@ -217,66 +207,71 @@ class _NotificationsPageState extends State<NotificationsPage> {
             ),
             const SizedBox(height: 8),
             Expanded(
-              child: ListView.builder(
-                itemCount: filteredNotifications.length,
-                itemBuilder: (context, index) {
-                  final notif = filteredNotifications[index];
-                  return Card(
-                    color: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: ListTile(
-                      onTap: () {
-                        if (!notif.read) {
-                          setState(() {
-                            final indexInAll = allNotifications.indexWhere(
-                              (n) => n.id == notif.id,
-                            );
-                            if (indexInAll != -1) {
-                              allNotifications[indexInAll] = notif.copyWith(
-                                read: true,
-                              );
-                            }
-                          });
-                        }
-                      },
-                      leading: CircleAvatar(
-                        backgroundColor: Colors.pink.shade50,
-                        child: Icon(
-                          _getIconForType(notif.type),
-                          color: Colors.pink,
-                        ),
-                      ),
-                      title: Text(notif.title),
-                      subtitle: Text(notif.message),
-                      trailing: Column(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          Text(
-                            DateFormat('MMM d, h:mm a').format(notif.createdAt),
-                            style: const TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey,
+              child:
+                  isLoading
+                      ? const Center(child: CircularProgressIndicator())
+                      : filteredNotifications.isEmpty
+                      ? const Center(child: Text("No notifications found."))
+                      : ListView.builder(
+                        itemCount: filteredNotifications.length,
+                        itemBuilder: (context, index) {
+                          final notif = filteredNotifications[index];
+                          return Card(
+                            color: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
                             ),
-                          ),
-                          if (!notif.read)
-                            const Padding(
-                              padding: EdgeInsets.only(top: 4),
-                              child: Text(
-                                "Unread",
-                                style: TextStyle(
-                                  color: Colors.red,
-                                  fontSize: 11,
+                            child: ListTile(
+                              onTap: () {
+                                if (!notif.read) {
+                                  setState(() {
+                                    final indexInAll = allNotifications
+                                        .indexWhere((n) => n.id == notif.id);
+                                    if (indexInAll != -1) {
+                                      allNotifications[indexInAll] = notif
+                                          .copyWith(read: true);
+                                    }
+                                  });
+                                }
+                              },
+                              leading: CircleAvatar(
+                                backgroundColor: Colors.pink.shade50,
+                                child: Icon(
+                                  _getIconForType(notif.type),
+                                  color: Colors.pink,
                                 ),
                               ),
+                              title: Text(notif.title),
+                              subtitle: Text(notif.message),
+                              trailing: Column(
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                children: [
+                                  Text(
+                                    DateFormat(
+                                      'MMM d, h:mm a',
+                                    ).format(notif.createdAt),
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.grey,
+                                    ),
+                                  ),
+                                  if (!notif.read)
+                                    const Padding(
+                                      padding: EdgeInsets.only(top: 4),
+                                      child: Text(
+                                        "Unread",
+                                        style: TextStyle(
+                                          color: Colors.red,
+                                          fontSize: 11,
+                                        ),
+                                      ),
+                                    ),
+                                ],
+                              ),
                             ),
-                        ],
+                          );
+                        },
                       ),
-                    ),
-                  );
-                },
-              ),
             ),
           ],
         ),

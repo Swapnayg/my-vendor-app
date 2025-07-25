@@ -45,17 +45,6 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  Future<void> _saveCredentials() async {
-    final prefs = await SharedPreferences.getInstance();
-    if (rememberMe) {
-      await prefs.setString('email', _emailController.text.trim());
-      await prefs.setString('password', _passwordController.text);
-    } else {
-      await prefs.remove('email');
-      await prefs.remove('password');
-    }
-  }
-
   bool _validateInputs() {
     bool isValid = true;
     final email = _emailController.text.trim();
@@ -80,38 +69,6 @@ class _LoginScreenState extends State<LoginScreen> {
     });
 
     return isValid;
-  }
-
-  Future<void> callVendorPostApi(token) async {
-    final url = Uri.parse(
-      'https://vendor-admin-portal.netlify.app/api/MobileApp/vendor/testtapi',
-    ); // Replace this with your actual token
-
-    try {
-      final response = await http.post(
-        url,
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
-        },
-        body: jsonEncode({'message': 'Hello from Flutter'}),
-      );
-
-      // Print response details
-      print('Status Code: ${response.statusCode}');
-      print('Response Body: ${response.body}');
-
-      // Optionally decode the response if it's JSON
-      if (response.statusCode == 200) {
-        final json = jsonDecode(response.body);
-        print('Server Message: ${json['message']}');
-        print('User Info: ${json['user']}');
-      } else {
-        print('Error: ${response.reasonPhrase}');
-      }
-    } catch (e) {
-      print('Exception occurred: $e');
-    }
   }
 
   void _login() async {
@@ -155,7 +112,6 @@ class _LoginScreenState extends State<LoginScreen> {
             await prefs.setString('password', password);
           }
 
-          callVendorPostApi(token);
           _showMessage(
             'Login successful!',
             isSuccess: true,

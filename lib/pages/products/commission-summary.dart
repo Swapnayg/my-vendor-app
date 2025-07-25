@@ -1,9 +1,11 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
+import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:my_vendor_app/common/common_layout.dart';
 import 'package:my_vendor_app/models/order.dart';
-import 'package:my_vendor_app/models/order_item.dart';
 import 'package:my_vendor_app/theme/colors.dart';
 
 class CommissionSummaryPage extends StatefulWidget {
@@ -14,16 +16,63 @@ class CommissionSummaryPage extends StatefulWidget {
 }
 
 class _CommissionSummaryPageState extends State<CommissionSummaryPage> {
-  late DateTime _fromDate;
-  late DateTime _toDate;
-  late List<Order> _orders;
+  DateTime _fromDate = DateTime.now().subtract(const Duration(days: 30));
+  DateTime _toDate = DateTime.now();
+  List<Order> _orders = [];
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _fromDate = DateTime.now().subtract(const Duration(days: 30));
-    _toDate = DateTime.now();
-    _orders = _getMockOrders();
+    fetchOrders();
+  }
+
+  Future<void> fetchOrders() async {
+    setState(() => _isLoading = true);
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('token') ?? '';
+
+      final uri = Uri.parse(
+        'https://vendor-admin-portal.netlify.app/api/MobileApp/vendor/commission-summary',
+      );
+      final response = await http.get(
+        uri,
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final jsonData = json.decode(response.body);
+        final List<Order> orders =
+            (jsonData['orders'] as List)
+                .map((data) => Order.fromJson(data))
+                .toList();
+
+        setState(() {
+          _orders =
+              orders
+                  .where(
+                    (o) =>
+                        o.createdAt.isAfter(
+                          _fromDate.subtract(const Duration(days: 1)),
+                        ) &&
+                        o.createdAt.isBefore(
+                          _toDate.add(const Duration(days: 1)),
+                        ),
+                  )
+                  .toList();
+        });
+      } else {
+        debugPrint("API Error: ${response.statusCode}");
+      }
+    } catch (e) {
+      debugPrint("Exception: $e");
+    } finally {
+      setState(() => _isLoading = false);
+    }
   }
 
   void _openDateFilter() {
@@ -79,17 +128,9 @@ class _CommissionSummaryPageState extends State<CommissionSummaryPage> {
                 setState(() {
                   _fromDate = tempFrom;
                   _toDate = tempTo;
-                  _orders =
-                      _getMockOrders().where((o) {
-                        return o.createdAt.isAfter(
-                              _fromDate.subtract(const Duration(days: 1)),
-                            ) &&
-                            o.createdAt.isBefore(
-                              _toDate.add(const Duration(days: 1)),
-                            );
-                      }).toList();
                 });
                 Navigator.pop(context);
+                fetchOrders();
               },
               child: const Text('Apply Filters'),
             ),
@@ -134,67 +175,79 @@ class _CommissionSummaryPageState extends State<CommissionSummaryPage> {
   @override
   Widget build(BuildContext context) {
     return CommonLayout(
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text(
-                  'Commission Overview',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
-                ),
-                TextButton.icon(
-                  onPressed: _openDateFilter,
-                  icon: const Icon(Icons.filter_alt, color: Colors.white),
-                  label: const Text(
-                    'Filter',
-                    style: TextStyle(color: Colors.white),
-                  ),
-                  style: TextButton.styleFrom(
-                    backgroundColor: Colors.orange,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 12,
+      body:
+          _isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'Commission Overview',
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        TextButton.icon(
+                          onPressed: _openDateFilter,
+                          icon: const Icon(
+                            Icons.filter_alt,
+                            color: Colors.white,
+                          ),
+                          label: const Text(
+                            'Filter',
+                            style: TextStyle(color: Colors.white),
+                          ),
+                          style: TextButton.styleFrom(
+                            backgroundColor: Colors.orange,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 12,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
+                  ),
+                  const Divider(height: 32),
+                  Expanded(
+                    child: ListView(
+                      padding: const EdgeInsets.all(16),
+                      children: [
+                        _buildCommissionCard(),
+                        const SizedBox(height: 16),
+                        _buildStatSummary(),
+                        const SizedBox(height: 16),
+                        _buildCommissionChart(),
+                        const SizedBox(height: 16),
+                        _buildProductDateWiseLineChart(),
+                        const SizedBox(height: 16),
+                        const Text(
+                          "Recent Orders",
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        ..._orders.map(_buildOrderTile),
+                        const SizedBox(height: 16),
+                        _buildTipsCard(),
+                        const SizedBox(height: 16),
+                        _buildPartnersRow(),
+                      ],
                     ),
                   ),
-                ),
-              ],
-            ),
-          ),
-          const Divider(height: 32),
-          Expanded(
-            child: ListView(
-              padding: const EdgeInsets.all(16),
-              children: [
-                _buildCommissionCard(),
-                const SizedBox(height: 16),
-                _buildStatSummary(),
-                const SizedBox(height: 16),
-                _buildCommissionChart(),
-                const SizedBox(height: 16),
-                _buildProductDateWiseLineChart(),
-                const SizedBox(height: 16),
-                const Text(
-                  "Recent Orders",
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                ),
-                const SizedBox(height: 8),
-                ..._orders.map(_buildOrderTile),
-                const SizedBox(height: 16),
-                _buildTipsCard(),
-                const SizedBox(height: 16),
-                _buildPartnersRow(),
-              ],
-            ),
-          ),
-        ],
-      ),
+                ],
+              ),
     );
   }
 
@@ -663,42 +716,5 @@ class _CommissionSummaryPageState extends State<CommissionSummaryPage> {
     ];
     final hash = label.codeUnits.fold(0, (a, b) => a + b);
     return colors[hash % colors.length];
-  }
-
-  // Mock data
-  List<Order> _getMockOrders() {
-    return List.generate(5, (index) {
-      return Order(
-        id: 1001 + index,
-        customerId: 1,
-        vendorId: 1,
-        status: OrderStatus.DELIVERED,
-        subTotal: 100,
-        taxTotal: 10,
-        shippingCharge: 0,
-        total: 110,
-        createdAt: _toDate.subtract(Duration(days: index + 1)),
-        items: [
-          OrderItem(
-            id: index,
-            orderId: 1001 + index,
-            productId: 1,
-            quantity: 1,
-            basePrice: 100,
-            taxRate: 10,
-            taxAmount: 10,
-            price: 110,
-            commissionAmt: [100, 200, 150, 50, 300][index].toDouble(),
-            commissionPct: 10,
-            product: null,
-          ),
-        ],
-        vendor: null,
-        customer: null,
-        user: null,
-        payment: null,
-        shippingSnapshot: null,
-      );
-    });
   }
 }

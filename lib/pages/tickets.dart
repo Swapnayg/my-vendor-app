@@ -1,44 +1,69 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import '/models/ticket.dart';
 import '/common/common_layout.dart';
+import '/models/ticket.dart';
 import 'package:go_router/go_router.dart';
+import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 
-class TicketManagementPage extends StatelessWidget {
+class TicketManagementPage extends StatefulWidget {
   const TicketManagementPage({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final List<Ticket> tickets = [
-      Ticket(
-        id: 101,
-        subject: 'Issue with Payment Gateway Integration',
-        message: 'Payment not processing properly',
-        type: TicketType.PAYMENT_ISSUE,
-        status: TicketStatus.OPEN,
-        createdAt: DateTime(2023, 10, 26),
-        updatedAt: DateTime.now(),
-      ),
-      Ticket(
-        id: 102,
-        subject: 'Order Fulfillment Error on Recent Shipment',
-        message: 'Wrong item delivered',
-        type: TicketType.ORDER_NOT_RECEIVED,
-        status: TicketStatus.CLOSED,
-        createdAt: DateTime(2023, 10, 20),
-        updatedAt: DateTime.now(),
-      ),
-      Ticket(
-        id: 103,
-        subject: 'Login Credentials Not Working for New User',
-        message: 'Unable to log in',
-        type: TicketType.TECHNICAL_ISSUE,
-        status: TicketStatus.RESPONDED,
-        createdAt: DateTime(2023, 10, 25),
-        updatedAt: DateTime.now(),
-      ),
-    ];
+  State<TicketManagementPage> createState() => _TicketManagementPageState();
+}
 
+class _TicketManagementPageState extends State<TicketManagementPage> {
+  List<Ticket> tickets = [];
+  bool isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    fetchTickets();
+  }
+
+  Future<void> fetchTickets() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('token');
+      if (token == null) throw Exception('Token not found');
+
+      final response = await http.get(
+        Uri.parse(
+          'https://vendor-admin-portal.netlify.app/api/MobileApp/vendor/tickets',
+        ),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final List<Ticket> loaded =
+            (data['tickets'] as List)
+                .map((json) => Ticket.fromJson(json))
+                .toList();
+
+        setState(() {
+          tickets = loaded;
+          isLoading = false;
+        });
+      } else {
+        throw Exception('Failed to load tickets');
+      }
+    } catch (e) {
+      print('Error fetching tickets: $e');
+      setState(() {
+        isLoading = false;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return CommonLayout(
       body: Column(
         children: [
@@ -52,18 +77,13 @@ class TicketManagementPage extends StatelessWidget {
               ),
             ),
           ),
-
           const SizedBox(height: 12),
-          // Raise New Ticket Button
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
             child: SizedBox(
               width: double.infinity,
               child: ElevatedButton.icon(
-                onPressed: () {
-                  context.go('/tickets/raise');
-                },
-
+                onPressed: () => context.go('/tickets/raise'),
                 icon: const Icon(Icons.add_circle_outline),
                 label: const Text('Raise New Ticket'),
                 style: ElevatedButton.styleFrom(
@@ -75,17 +95,20 @@ class TicketManagementPage extends StatelessWidget {
               ),
             ),
           ),
-
-          // Tickets List
           Expanded(
-            child: ListView.separated(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              itemCount: tickets.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 12),
-              itemBuilder: (context, index) {
-                return TicketCard(ticket: tickets[index]);
-              },
-            ),
+            child:
+                isLoading
+                    ? const Center(child: CircularProgressIndicator())
+                    : tickets.isEmpty
+                    ? const Center(child: Text("No tickets found"))
+                    : ListView.separated(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      itemCount: tickets.length,
+                      separatorBuilder: (_, __) => const SizedBox(height: 12),
+                      itemBuilder: (context, index) {
+                        return TicketCard(ticket: tickets[index]);
+                      },
+                    ),
           ),
         ],
       ),
@@ -97,18 +120,6 @@ class TicketCard extends StatelessWidget {
   final Ticket ticket;
 
   const TicketCard({super.key, required this.ticket});
-
-  Color _getPriorityColor(Ticket ticket) {
-    if (ticket.id == 101) return Colors.red;
-    if (ticket.id == 102) return Colors.amber;
-    return Colors.green;
-  }
-
-  String _getPriorityLabel(Ticket ticket) {
-    if (ticket.id == 101) return 'High';
-    if (ticket.id == 102) return 'Medium';
-    return 'Low';
-  }
 
   Color _getStatusColor(TicketStatus status) {
     switch (status) {
@@ -157,7 +168,7 @@ class TicketCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Top Row: Icon + Ticket ID + Status Chip
+          // Row: Icon + Ticket ID + Status
           Row(
             children: [
               Icon(
@@ -190,51 +201,25 @@ class TicketCard extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 8),
 
-          // Subject
+          const SizedBox(height: 8),
           Text(
             ticket.subject,
             style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
           ),
 
           const SizedBox(height: 4),
-
-          // Date and Priority
-          Row(
-            children: [
-              Text(
-                'Created: ${DateFormat('yyyy-MM-dd').format(ticket.createdAt)}',
-                style: const TextStyle(color: Colors.grey, fontSize: 13),
-              ),
-              const Spacer(),
-              Row(
-                children: [
-                  Icon(Icons.circle, size: 8, color: _getPriorityColor(ticket)),
-                  const SizedBox(width: 4),
-                  Text(
-                    'Priority: ${_getPriorityLabel(ticket)}',
-                    style: const TextStyle(fontSize: 13),
-                  ),
-                ],
-              ),
-            ],
+          Text(
+            'Created: ${DateFormat('yyyy-MM-dd').format(ticket.createdAt)}',
+            style: const TextStyle(color: Colors.grey, fontSize: 13),
           ),
 
           const SizedBox(height: 8),
-
-          // View Details
           Align(
             alignment: Alignment.centerRight,
             child: TextButton.icon(
-              onPressed: () {
-                context.go(
-                  '/tickets/details',
-                  extra:
-                      ticket
-                          .toJson(), // assuming `ticket` is the current Ticket object
-                );
-              },
+              onPressed:
+                  () => context.go('/tickets/details', extra: ticket.toJson()),
               icon: const Icon(Icons.arrow_forward_ios, size: 14),
               label: const Text('View Details'),
               style: TextButton.styleFrom(

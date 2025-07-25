@@ -1,6 +1,9 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:my_vendor_app/common/common_layout.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:http/http.dart' as http;
 
 class EditBusinessDetailsPage extends StatefulWidget {
   const EditBusinessDetailsPage({super.key});
@@ -12,12 +15,58 @@ class EditBusinessDetailsPage extends StatefulWidget {
 
 class _EditBusinessDetailsPageState extends State<EditBusinessDetailsPage> {
   final _formKey = GlobalKey<FormState>();
-
   final _businessNameController = TextEditingController(
     text: "TechSpark Pvt Ltd",
   );
   final _gstController = TextEditingController(text: "27ABCDE1234F1Z5");
   final _websiteController = TextEditingController(text: "www.techspark.com");
+
+  bool _isLoading = false;
+
+  Future<void> _submitBusinessDetails() async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('token');
+
+    if (token == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Token not found. Please login again.")),
+      );
+      return;
+    }
+
+    final uri = Uri.parse(
+      'https://vendor-admin-portal.netlify.app/api/MobileApp/vendor/business_details',
+    );
+    final response = await http.post(
+      uri,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+      body: jsonEncode({
+        'businessName': _businessNameController.text.trim(),
+        'gstNumber': _gstController.text.trim(),
+        'website': _websiteController.text.trim(),
+      }),
+    );
+
+    final data = jsonDecode(response.body);
+
+    if (response.statusCode == 200 && data['success'] == true) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Business details updated successfully.")),
+      );
+      context.pop(); // go back to profile
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            data['message'] ?? 'Failed to update business details.',
+          ),
+        ),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -69,17 +118,28 @@ class _EditBusinessDetailsPageState extends State<EditBusinessDetailsPage> {
                       children: [
                         Expanded(
                           child: FilledButton(
-                            onPressed: () {
+                            onPressed: () async {
                               if (_formKey.currentState!.validate()) {
-                                // Save logic here
-                                context.pop(); // Navigate back to profile
+                                setState(() => _isLoading = true);
+                                await _submitBusinessDetails();
+                                setState(() => _isLoading = false);
                               }
                             },
                             style: FilledButton.styleFrom(
                               backgroundColor: const Color(0xFF7C3AED),
                               padding: const EdgeInsets.symmetric(vertical: 14),
                             ),
-                            child: const Text("Save Changes"),
+                            child:
+                                _isLoading
+                                    ? const SizedBox(
+                                      width: 20,
+                                      height: 20,
+                                      child: CircularProgressIndicator(
+                                        color: Colors.white,
+                                        strokeWidth: 2,
+                                      ),
+                                    )
+                                    : const Text("Save Changes"),
                           ),
                         ),
                         const SizedBox(width: 12),

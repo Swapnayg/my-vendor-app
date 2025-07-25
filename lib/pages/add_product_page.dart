@@ -10,6 +10,7 @@ import 'package:my_vendor_app/common/common_layout.dart';
 import 'package:my_vendor_app/models/compliance.dart';
 import 'package:my_vendor_app/models/product.dart';
 import 'package:my_vendor_app/models/product_image.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class AddProductPage extends StatefulWidget {
   final Product? initialData;
@@ -178,7 +179,7 @@ class _AddProductPageState extends State<AddProductPage> {
     return null;
   }
 
-  void _saveProduct() {
+  void _saveProduct() async {
     if (!_formKey.currentState!.validate()) return;
 
     if (_imageUrls.isEmpty) {
@@ -230,10 +231,48 @@ class _AddProductPageState extends State<AddProductPage> {
       reviews: [],
     );
 
-    debugPrint('Product Saved: ${jsonEncode(newProduct)}');
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(isEditMode ? 'Product Updated' : 'Product Saved')),
-    );
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('token');
+      if (token == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Authentication token missing')),
+        );
+        return;
+      }
+      // TODO: Replace with secure token retrieval
+      final url = Uri.parse(
+        'https://vendor-admin-portal.netlify.app/api/MobileApp/vendor/add-product',
+      );
+
+      final response = await http.post(
+        url,
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode(newProduct.toJson()),
+      );
+
+      if (response.statusCode == 200) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(isEditMode ? 'Product Updated' : 'Product Saved'),
+          ),
+        );
+        context.go('/products/management');
+      } else {
+        debugPrint('Error: ${response.body}');
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to submit product.')));
+      }
+    } catch (e) {
+      debugPrint('Exception: $e');
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Something went wrong.')));
+    }
   }
 
   @override

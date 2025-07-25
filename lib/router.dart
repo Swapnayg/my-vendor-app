@@ -101,9 +101,9 @@ final GoRouter router = GoRouter(
       path: '/chat',
       builder: (context, state) {
         final extra = state.extra as Map<String, dynamic>;
-        final String ticketId = extra['ticketId'].toString(); // ✅ FIXED
+        final String customerId = extra['customerId'].toString(); // ✅ FIXED
         final User user = extra['user'];
-        return ChatPage(ticketId: ticketId, user: user);
+        return ChatPage(customerId: customerId, user: user);
       },
     ),
 

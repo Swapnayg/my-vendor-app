@@ -1,6 +1,9 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:my_vendor_app/common/common_layout.dart';
+import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 
 class EditZoneCategoryPage extends StatefulWidget {
   const EditZoneCategoryPage({super.key});
@@ -26,6 +29,41 @@ class _EditZoneCategoryPageState extends State<EditZoneCategoryPage> {
     'Grocery',
     'Health',
   ];
+
+  Future<void> _submitZoneCategory() async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('token');
+    if (token == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Authentication token missing')),
+      );
+      return;
+    }
+
+    final uri = Uri.parse(
+      "https://vendor-admin-portal.netlify.app/api/MobileApp/vendor/zone-details",
+    );
+
+    final response = await http.post(
+      uri,
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode({'zone': _selectedZone, 'category': _selectedCategory}),
+    );
+
+    if (response.statusCode == 200) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Zone and category updated successfully")),
+      );
+      context.pop();
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Failed to update (${response.statusCode})")),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -55,30 +93,7 @@ class _EditZoneCategoryPageState extends State<EditZoneCategoryPage> {
                   children: [
                     DropdownButtonFormField<String>(
                       value: _selectedZone,
-                      decoration: InputDecoration(
-                        labelText: "Zone",
-                        border: OutlineInputBorder(
-                          borderSide: BorderSide(color: Colors.grey.shade300),
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderSide: BorderSide(color: Colors.grey.shade300),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderSide: BorderSide(
-                            color: Colors.grey.shade400,
-                            width: 1.5,
-                          ),
-                        ),
-                        errorBorder: OutlineInputBorder(
-                          borderSide: BorderSide(color: Colors.red.shade300),
-                        ),
-                        focusedErrorBorder: OutlineInputBorder(
-                          borderSide: BorderSide(
-                            color: Colors.red.shade400,
-                            width: 1.5,
-                          ),
-                        ),
-                      ),
+                      decoration: _dropdownDecoration("Zone"),
                       items:
                           zones
                               .map(
@@ -94,30 +109,7 @@ class _EditZoneCategoryPageState extends State<EditZoneCategoryPage> {
                     const SizedBox(height: 16),
                     DropdownButtonFormField<String>(
                       value: _selectedCategory,
-                      decoration: InputDecoration(
-                        labelText: "Category",
-                        border: OutlineInputBorder(
-                          borderSide: BorderSide(color: Colors.grey.shade300),
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderSide: BorderSide(color: Colors.grey.shade300),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderSide: BorderSide(
-                            color: Colors.grey.shade400,
-                            width: 1.5,
-                          ),
-                        ),
-                        errorBorder: OutlineInputBorder(
-                          borderSide: BorderSide(color: Colors.red.shade300),
-                        ),
-                        focusedErrorBorder: OutlineInputBorder(
-                          borderSide: BorderSide(
-                            color: Colors.red.shade400,
-                            width: 1.5,
-                          ),
-                        ),
-                      ),
+                      decoration: _dropdownDecoration("Category"),
                       items:
                           categories
                               .map(
@@ -131,7 +123,7 @@ class _EditZoneCategoryPageState extends State<EditZoneCategoryPage> {
                           (val) =>
                               val == null || val.isEmpty ? "Required" : null,
                     ),
-                    const SizedBox(height: 24), // Reduced spacing
+                    const SizedBox(height: 24),
                     _buildActions(context),
                   ],
                 ),
@@ -143,13 +135,36 @@ class _EditZoneCategoryPageState extends State<EditZoneCategoryPage> {
     );
   }
 
+  InputDecoration _dropdownDecoration(String label) {
+    return InputDecoration(
+      labelText: label,
+      border: OutlineInputBorder(
+        borderSide: BorderSide(color: Colors.grey.shade300),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderSide: BorderSide(color: Colors.grey.shade300),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderSide: BorderSide(color: Colors.grey.shade400, width: 1.5),
+      ),
+      errorBorder: OutlineInputBorder(
+        borderSide: BorderSide(color: Colors.red.shade300),
+      ),
+      focusedErrorBorder: OutlineInputBorder(
+        borderSide: BorderSide(color: Colors.red.shade400, width: 1.5),
+      ),
+    );
+  }
+
   Widget _buildActions(BuildContext context) {
     return Row(
       children: [
         Expanded(
           child: FilledButton(
             onPressed: () {
-              if (_formKey.currentState!.validate()) context.pop();
+              if (_formKey.currentState!.validate()) {
+                _submitZoneCategory();
+              }
             },
             style: FilledButton.styleFrom(
               backgroundColor: const Color(0xFF7C3AED),

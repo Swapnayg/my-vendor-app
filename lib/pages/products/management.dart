@@ -1,9 +1,11 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 import '/common/common_layout.dart';
 import '/models/product.dart';
 import '/theme/colors.dart';
-import '/data/mock_products.dart';
-import 'package:go_router/go_router.dart';
 
 class ProductManagementPage extends StatefulWidget {
   const ProductManagementPage({super.key});
@@ -13,7 +15,7 @@ class ProductManagementPage extends StatefulWidget {
 }
 
 class _ProductManagementPageState extends State<ProductManagementPage> {
-  List<Product> allProducts = mockProducts;
+  List<Product> allProducts = [];
   List<Product> displayedProducts = [];
   String selectedCategory = 'All';
   String selectedStatus = 'All';
@@ -25,13 +27,46 @@ class _ProductManagementPageState extends State<ProductManagementPage> {
   @override
   void initState() {
     super.initState();
-    _filterProducts();
+    fetchProducts();
     scrollController.addListener(() {
       if (scrollController.position.pixels ==
           scrollController.position.maxScrollExtent) {
         _loadMore();
       }
     });
+  }
+
+  Future<void> fetchProducts() async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('token') ?? '';
+
+    final uri = Uri.parse(
+      'https://vendor-admin-portal.netlify.app/api/MobileApp/vendor/product-management',
+    );
+
+    try {
+      final response = await http.get(
+        uri,
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final List<dynamic> data = json.decode(response.body)['products'];
+        final products = data.map((json) => Product.fromJson(json)).toList();
+
+        setState(() {
+          allProducts = products;
+          _filterProducts();
+        });
+      } else {
+        debugPrint('Failed to load products: ${response.body}');
+      }
+    } catch (e) {
+      debugPrint('Error: $e');
+    }
   }
 
   void _loadMore() {

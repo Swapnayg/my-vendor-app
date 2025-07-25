@@ -1,27 +1,94 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:http/http.dart' as http;
 import '/common/common_layout.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 
-class TrackingDetailsPage extends StatelessWidget {
+class TrackingDetailsPage extends StatefulWidget {
   final String orderId;
 
   const TrackingDetailsPage({super.key, required this.orderId});
 
   @override
-  Widget build(BuildContext context) {
-    final mapController = MapController();
+  State<TrackingDetailsPage> createState() => _TrackingDetailsPageState();
+}
 
-    final mockTracking = {
-      'status': 'In Transit',
-      'location': LatLng(12.9716, 77.5946), // Bangalore mock location
-      'history': [
-        {'status': 'Order Shipped', 'time': '10:00 AM'},
-        {'status': 'Out for Delivery', 'time': '1:30 PM'},
-        {'status': 'Delivered', 'time': '4:45 PM'},
-      ],
-    };
+class _TrackingDetailsPageState extends State<TrackingDetailsPage> {
+  bool isLoading = true;
+  Map<String, dynamic>? trackingData;
+  final mapController = MapController();
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchTrackingDetails();
+  }
+
+  Future<void> _fetchTrackingDetails() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('token') ?? '';
+
+      final uri = Uri.parse(
+        'https://vendor-admin-portal.netlify.app/api/MobileApp/vendor/track-details',
+      );
+
+      final response = await http.post(
+        uri,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode({'orderId': widget.orderId}),
+      );
+
+      if (response.statusCode == 200) {
+        final res = json.decode(response.body);
+
+        setState(() {
+          trackingData = {
+            'location': {
+              'lat': res['data']['latitude'] ?? 0.0,
+              'lng': res['data']['longitude'] ?? 0.0,
+            },
+            'history':
+                (res['data']['trackingHistory'] as List).map((entry) {
+                  return {
+                    'status': entry['status'],
+                    'message': entry['message'] ?? '',
+                    'time': DateFormat(
+                      'yyyy-MM-dd – kk:mm',
+                    ).format(DateTime.parse(entry['createdAt'])),
+                  };
+                }).toList(),
+          };
+          isLoading = false;
+        });
+      } else {
+        throw Exception('Failed to load tracking info');
+      }
+    } catch (e) {
+      setState(() => isLoading = false);
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error: $e')));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (isLoading || trackingData == null) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
+    final lat = trackingData!['location']['lat'];
+    final lng = trackingData!['location']['lng'];
+    final location = LatLng(lat, lng);
+    final history = trackingData!['history'] as List<dynamic>;
 
     return CommonLayout(
       body: Column(
@@ -33,7 +100,10 @@ class TrackingDetailsPage extends StatelessWidget {
                 IconButton(
                   icon: const Icon(Icons.arrow_back),
                   onPressed: () {
-                    context.go('/orders/track', extra: {'orderId': orderId});
+                    context.go(
+                      '/orders/track',
+                      extra: {'orderId': widget.orderId},
+                    );
                   },
                 ),
                 const SizedBox(width: 4),
@@ -51,7 +121,7 @@ class TrackingDetailsPage extends StatelessWidget {
                 FlutterMap(
                   mapController: mapController,
                   options: MapOptions(
-                    initialCenter: mockTracking['location'] as LatLng,
+                    initialCenter: location,
                     initialZoom: 13,
                     minZoom: 3,
                     maxZoom: 18,
@@ -68,7 +138,7 @@ class TrackingDetailsPage extends StatelessWidget {
                     MarkerLayer(
                       markers: [
                         Marker(
-                          point: mockTracking['location'] as LatLng,
+                          point: location,
                           width: 40,
                           height: 40,
                           child: const Icon(
@@ -81,7 +151,6 @@ class TrackingDetailsPage extends StatelessWidget {
                     ),
                   ],
                 ),
-                // Zoom Controls
                 Positioned(
                   top: 16,
                   right: 16,
@@ -112,8 +181,6 @@ class TrackingDetailsPage extends StatelessWidget {
               ],
             ),
           ),
-
-          // --- Order Progress Section ---
           const SizedBox(height: 12),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -133,75 +200,68 @@ class TrackingDetailsPage extends StatelessWidget {
                 ),
                 const SizedBox(height: 12),
                 Column(
-                  children: List.generate(
-                    (mockTracking['history'] as List).length,
-                    (index) {
-                      final entry = (mockTracking['history'] as List)[index];
-                      final isCompleted =
-                          index < (mockTracking['history'] as List).length - 1;
-                      final isLast =
-                          index == (mockTracking['history'] as List).length - 1;
+                  children: List.generate(history.length, (index) {
+                    final entry = history[index];
+                    final isCompleted = index < history.length - 1;
+                    final isLast = index == history.length - 1;
 
-                      return Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Column(
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(6),
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color:
-                                      isCompleted
-                                          ? Colors.green
-                                          : Colors.grey.shade300,
-                                ),
-                                child: Icon(
-                                  isCompleted ? Icons.check : Icons.access_time,
-                                  size: 16,
-                                  color:
-                                      isCompleted
-                                          ? Colors.white
-                                          : Colors.black54,
-                                ),
+                    return Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Column(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(6),
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color:
+                                    isCompleted
+                                        ? Colors.green
+                                        : Colors.grey.shade300,
                               ),
-                              if (!isLast)
-                                Container(
-                                  height: 40,
-                                  width: 2,
-                                  color: Colors.grey.shade300,
-                                ),
-                            ],
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Padding(
-                              padding: const EdgeInsets.only(top: 4),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    entry['status'],
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                  Text(
-                                    entry['time'],
-                                    style: const TextStyle(
-                                      fontSize: 12,
-                                      color: Colors.grey,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 12),
-                                ],
+                              child: Icon(
+                                isCompleted ? Icons.check : Icons.access_time,
+                                size: 16,
+                                color:
+                                    isCompleted ? Colors.white : Colors.black54,
                               ),
                             ),
+                            if (!isLast)
+                              Container(
+                                height: 40,
+                                width: 2,
+                                color: Colors.grey.shade300,
+                              ),
+                          ],
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Padding(
+                            padding: const EdgeInsets.only(top: 4),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  entry['status'],
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                                Text(
+                                  entry['time'],
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.grey,
+                                  ),
+                                ),
+                                const SizedBox(height: 12),
+                              ],
+                            ),
                           ),
-                        ],
-                      );
-                    },
-                  ),
+                        ),
+                      ],
+                    );
+                  }),
                 ),
               ],
             ),
@@ -212,7 +272,7 @@ class TrackingDetailsPage extends StatelessWidget {
             child: SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: () {},
+                onPressed: () => context.pop(),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.deepPurple,
                   foregroundColor: Colors.white,

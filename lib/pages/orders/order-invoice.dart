@@ -1,4 +1,3 @@
-import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:my_vendor_app/common/common_layout.dart';
@@ -13,7 +12,6 @@ class InvoicePage extends StatelessWidget {
 
   const InvoicePage({super.key, required this.order, required this.source});
 
-  @override
   Color _getStatusColor(String status) {
     switch (status.toUpperCase()) {
       case 'PENDING':

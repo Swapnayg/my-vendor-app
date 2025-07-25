@@ -1,95 +1,201 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:http/http.dart' as http;
 import 'package:my_vendor_app/common/common_layout.dart';
-import 'package:my_vendor_app/models/user.dart'; // ensure User class is imported here
+import 'package:my_vendor_app/models/user.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
-class ChatPage extends StatelessWidget {
-  final String ticketId;
+class ChatPage extends StatefulWidget {
+  final String customerId;
   final User user;
 
-  const ChatPage({super.key, required this.ticketId, required this.user});
+  const ChatPage({super.key, required this.customerId, required this.user});
+
+  @override
+  State<ChatPage> createState() => _ChatPageState();
+}
+
+class _ChatPageState extends State<ChatPage> {
+  List<Map<String, dynamic>> messages = [];
+  bool isLoading = true;
+  final TextEditingController messageController = TextEditingController();
+
+  int? vendorId;
+  String? token;
+
+  @override
+  void initState() {
+    super.initState();
+    initializeChat();
+  }
+
+  Future<void> initializeChat() async {
+    final prefs = await SharedPreferences.getInstance();
+    vendorId = prefs.getInt('userId');
+    token = prefs.getString('token');
+
+    if (vendorId == null || token == null) {
+      setState(() => isLoading = false);
+      return;
+    }
+
+    await fetchChatMessages();
+  }
+
+  Future<void> fetchChatMessages() async {
+    setState(() => isLoading = true);
+
+    final uri = Uri.parse(
+      "https://vendor-admin-portal.netlify.app/api/MobileApp/vendor/chat",
+    );
+    final response = await http.post(
+      uri,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+      body: jsonEncode({'vendorId': vendorId, 'customerId': widget.customerId}),
+    );
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      setState(() {
+        messages = List<Map<String, dynamic>>.from(data['data']);
+        isLoading = false;
+      });
+    } else {
+      print("Fetch failed: ${response.body}");
+      setState(() => isLoading = false);
+    }
+  }
+
+  Future<void> sendMessage() async {
+    final text = messageController.text.trim();
+    if (text.isEmpty || vendorId == null || token == null) return;
+
+    final uri = Uri.parse(
+      "https://vendor-admin-portal.netlify.app/api/MobileApp/vendor/sendmessage",
+    );
+    final response = await http.post(
+      uri,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+      body: jsonEncode({
+        'vendorId': vendorId,
+        'customerId': widget.customerId,
+        'text': text,
+      }),
+    );
+
+    if (response.statusCode == 200) {
+      messageController.clear();
+      await fetchChatMessages();
+    } else {
+      print("Send failed: ${response.body}");
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return CommonLayout(
       body: Column(
         children: [
-          // AppBar content moved here
+          // AppBar
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             child: Row(
               children: [
                 GestureDetector(
-                  onTap:
-                      () => context.go('/messages'), // ✅ go back to chat list
+                  onTap: () => context.go('/messages'),
                   child: const Icon(Icons.arrow_back_ios, color: Colors.black),
                 ),
                 const SizedBox(width: 8),
                 const Expanded(
                   child: Text(
                     "Admin Support",
-                    style: TextStyle(
-                      color: Colors.black,
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                    ),
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
                   ),
                 ),
-                _buildUserAvatar(user),
+                _buildUserAvatar(widget.user),
               ],
             ),
           ),
-
           const Divider(height: 1),
-          // Chat messages
+          // Chat body
           Expanded(
-            child: ListView(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              children: const [
-                ChatBubble(
-                  text: "Hello, please confirm shipping status for order #007.",
-                  time: "10:05 AM",
-                  isSentByMe: false,
-                  avatarUrl: 'https://i.pravatar.cc/150?img=2',
+            child:
+                isLoading
+                    ? const Center(child: CircularProgressIndicator())
+                    : ListView.builder(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
+                      itemCount: messages.length,
+                      itemBuilder: (context, index) {
+                        final message = messages[index];
+                        final isSentByMe =
+                            message['senderId'].toString() != widget.customerId;
+                        return ChatBubble(
+                          text: message['text'] ?? '',
+                          time: message['createdAt']?.toString() ?? '',
+                          isSentByMe: isSentByMe,
+                          avatarUrl:
+                              isSentByMe
+                                  ? 'https://i.pravatar.cc/150?img=11'
+                                  : (widget.user.avatarUrl ??
+                                      'https://i.pravatar.cc/150?img=1'),
+                        );
+                      },
+                    ),
+          ),
+          _buildInputBar(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInputBar() {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: 12,
+      ).copyWith(bottom: 16, top: 6),
+      decoration: const BoxDecoration(
+        border: Border(top: BorderSide(color: Colors.grey, width: 0.2)),
+        color: Colors.white,
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: TextField(
+              controller: messageController,
+              decoration: InputDecoration(
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
                 ),
-                ChatBubble(
-                  text:
-                      "Confirmed. Item shipped on 12th January. Tracking ID: TRACK-ABC-123. ETA is 3-5 business days.",
-                  time: "10:07 AM",
-                  isSentByMe: true,
-                  avatarUrl: 'https://i.pravatar.cc/150?img=3',
+                hintText: "Type your message...",
+                filled: true,
+                fillColor: Colors.grey[100],
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(24),
+                  borderSide: BorderSide.none,
                 ),
-                ChatBubble(
-                  text:
-                      "Thank you for the quick update. Is there a way to prioritize express shipping?",
-                  time: "10:08 AM",
-                  isSentByMe: false,
-                  avatarUrl: 'https://i.pravatar.cc/150?img=4',
-                ),
-                ChatBubble(
-                  text:
-                      "Let me check the options for express shipping. I'll get back to you within the hour.",
-                  time: "10:10 AM",
-                  isSentByMe: true,
-                  avatarUrl: 'https://i.pravatar.cc/150?img=5',
-                ),
-                ChatBubble(
-                  text: "Sounds good. Appreciate your help!",
-                  time: "10:11 AM",
-                  isSentByMe: false,
-                  avatarUrl: 'https://i.pravatar.cc/150?img=6',
-                ),
-                ChatBubble(
-                  text:
-                      "Following up on express shipping. I've found an option for next-day delivery at an additional cost. Shall I proceed?",
-                  time: "11:05 AM",
-                  isSentByMe: true,
-                  avatarUrl: 'https://i.pravatar.cc/150?img=7',
-                ),
-              ],
+              ),
             ),
           ),
-          const ChatInputBar(),
+          const SizedBox(width: 8),
+          GestureDetector(
+            onTap: sendMessage,
+            child: const CircleAvatar(
+              radius: 22,
+              backgroundColor: Color(0xFF5E4AE3),
+              child: Icon(Icons.send, color: Colors.white),
+            ),
+          ),
         ],
       ),
     );
@@ -170,23 +276,9 @@ class ChatBubble extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 4),
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      time,
-                      style: TextStyle(fontSize: 11, color: Colors.grey[600]),
-                    ),
-                    if (isSentByMe)
-                      const Padding(
-                        padding: EdgeInsets.only(left: 4),
-                        child: Icon(
-                          Icons.check,
-                          size: 14,
-                          color: Colors.white70,
-                        ),
-                      ),
-                  ],
+                Text(
+                  time,
+                  style: TextStyle(fontSize: 11, color: Colors.grey[600]),
                 ),
               ],
             ),
@@ -194,50 +286,6 @@ class ChatBubble extends StatelessWidget {
           const SizedBox(width: 6),
           if (isSentByMe)
             CircleAvatar(radius: 14, backgroundImage: NetworkImage(avatarUrl)),
-        ],
-      ),
-    );
-  }
-}
-
-class ChatInputBar extends StatelessWidget {
-  const ChatInputBar({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 12,
-      ).copyWith(bottom: 16, top: 6),
-      decoration: const BoxDecoration(
-        border: Border(top: BorderSide(color: Colors.grey, width: 0.2)),
-        color: Colors.white,
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: TextField(
-              decoration: InputDecoration(
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 12,
-                ),
-                hintText: "Type your message...",
-                filled: true,
-                fillColor: Colors.grey[100],
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(24),
-                  borderSide: BorderSide.none,
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(width: 8),
-          CircleAvatar(
-            radius: 22,
-            backgroundColor: const Color(0xFF5E4AE3),
-            child: const Icon(Icons.send, color: Colors.white),
-          ),
         ],
       ),
     );

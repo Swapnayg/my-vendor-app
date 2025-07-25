@@ -1,13 +1,54 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:http/http.dart' as http;
 import '../common/common_layout.dart';
 import '../theme/colors.dart';
-import '../widgets/chart_widgets.dart';
-import '../data/overview_stats.dart';
-import '../data/recent_notifications.dart';
-import '../data/latest_orders.dart';
 
-class HomePage extends StatelessWidget {
+class HomePage extends StatefulWidget {
   const HomePage({super.key});
+
+  @override
+  State<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
+  List<dynamic> overviewStats = [];
+  List<dynamic> recentNotifications = [];
+  List<dynamic> latestOrders = [];
+  bool isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    fetchHomeData();
+  }
+
+  Future<void> fetchHomeData() async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('token');
+    final url = Uri.parse(
+      "https://vendor-admin-portal.netlify.app/api/MobileApp/vendor/main-details",
+    );
+
+    final response = await http.get(
+      url,
+      headers: {'Authorization': 'Bearer $token'},
+    );
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      setState(() {
+        overviewStats = data['data']['overviewStats'] ?? [];
+        recentNotifications = data['data']['recentNotifications'] ?? [];
+        latestOrders = data['data']['latestOrders'] ?? [];
+        isLoading = false;
+      });
+    } else {
+      setState(() => isLoading = false);
+      debugPrint('Error fetching home data: ${response.body}');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -16,100 +57,79 @@ class HomePage extends StatelessWidget {
     final itemWidth = (MediaQuery.of(context).size.width - 48) / crossAxisCount;
 
     return CommonLayout(
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              "Overview",
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
-            ),
-            const SizedBox(height: 12),
-            Wrap(
-              spacing: 12,
-              runSpacing: 12,
-              children: List.generate(overviewStats.length, (index) {
-                final stat = overviewStats[index];
-                final color = _cardColors[index % _cardColors.length];
-                return _overviewCard(
-                  stat.icon,
-                  stat.label,
-                  stat.value,
-                  stat.growth,
-                  color,
-                  width: itemWidth,
-                );
-              }),
-            ),
-
-            const SizedBox(height: 24),
-            const Text(
-              "Performance Analytics",
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
-            ),
-            const SizedBox(height: 16),
-            const SalesOverviewChart(),
-            const SizedBox(height: 16),
-            const TopProductsChart(),
-            const SizedBox(height: 16),
-            const RevenueBreakdownPie(),
-            const SizedBox(height: 16),
-            const UserGrowthChart(),
-            const SizedBox(height: 24),
-            const Text(
-              "Recent Notifications",
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
-            ),
-            const SizedBox(height: 12),
-            ...recentNotifications.map((n) {
-              try {
-                return _notificationTile(
-                  n.iconName,
-                  n.title,
-                  n.message,
-                  n.time,
-                  isNew: n.isNew,
-                );
-              } catch (e) {
-                print("❌ Error mapping notification: $e");
-                return const ListTile(
-                  title: Text("Error loading notification"),
-                );
-              }
-            }),
-
-            const SizedBox(height: 24),
-            const Text(
-              "Latest Orders",
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
-            ),
-            const SizedBox(height: 12),
-
-            ...latestOrders.map((o) {
-              try {
-                return _orderTile(
-                  o.initials,
-                  o.orderId,
-                  o.customerName,
-                  o.amount.toStringAsFixed(2),
-                  o.status,
-                  o.date,
-                );
-              } catch (e, stackTrace) {
-                print('❌ Error rendering order ${o.orderId}: $e');
-                print(stackTrace);
-                return const ListTile(
-                  title: Text("⚠️ Error loading order"),
-                  subtitle: Text("This order could not be displayed."),
-                );
-              }
-            }),
-
-            const SizedBox(height: 50),
-          ],
-        ),
-      ),
+      body:
+          isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : SingleChildScrollView(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      "Overview",
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Wrap(
+                      spacing: 12,
+                      runSpacing: 12,
+                      children: List.generate(overviewStats.length, (index) {
+                        final stat = overviewStats[index];
+                        final color = _cardColors[index % _cardColors.length];
+                        return _overviewCard(
+                          stat['icon'],
+                          stat['label'],
+                          stat['value'],
+                          stat['growth'],
+                          color,
+                          width: itemWidth,
+                        );
+                      }),
+                    ),
+                    const SizedBox(height: 24),
+                    const Text(
+                      "Recent Notifications",
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    ...recentNotifications.map((n) {
+                      return _notificationTile(
+                        n['iconName'],
+                        n['title'],
+                        n['message'],
+                        n['time'],
+                        isNew: n['isNew'] ?? false,
+                      );
+                    }),
+                    const SizedBox(height: 24),
+                    const Text(
+                      "Latest Orders",
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    ...latestOrders.map((o) {
+                      return _orderTile(
+                        o['initials'],
+                        o['orderId'],
+                        o['customerName'],
+                        o['amount'].toString(),
+                        o['status'],
+                        o['date'],
+                      );
+                    }),
+                    const SizedBox(height: 50),
+                  ],
+                ),
+              ),
     );
   }
 
@@ -122,15 +142,13 @@ class HomePage extends StatelessWidget {
   ];
 
   Widget _overviewCard(
-    Icon icon,
+    String iconName,
     String label,
     String value,
     String growth,
     Color color, {
     required double width,
   }) {
-    print('🟡 Building Overview Card: label=$label');
-
     return Container(
       width: width,
       decoration: BoxDecoration(
@@ -141,7 +159,10 @@ class HomePage extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon.icon, color: Colors.black54),
+          Icon(
+            Icons.shopping_cart,
+            color: Colors.black54,
+          ), // Adjust with custom icons if needed
           const SizedBox(height: 8),
           Text(label, style: const TextStyle(color: Colors.black54)),
           const SizedBox(height: 4),
@@ -161,72 +182,63 @@ class HomePage extends StatelessWidget {
   }
 
   Widget _notificationTile(
-    Icon icon,
+    String iconName,
     String title,
     String subtitle,
     String time, {
     bool isNew = false,
   }) {
-    print('🔵 Rendering Notification: title=$title, isNew=$isNew');
-
-    try {
-      return Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 12.0),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            CircleAvatar(
-              backgroundColor: Colors.blue.withOpacity(0.1),
-              child: Icon(icon.icon, color: Colors.blue),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: const TextStyle(fontWeight: FontWeight.w600),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(subtitle),
-                ],
-              ),
-            ),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 12.0),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          CircleAvatar(
+            backgroundColor: Colors.blue.withOpacity(0.1),
+            child: Icon(Icons.notifications, color: Colors.blue),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(time, style: const TextStyle(fontSize: 12)),
-                if (isNew)
-                  const Padding(
-                    padding: EdgeInsets.only(top: 4),
-                    child: Chip(
-                      label: Text(
-                        "New",
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      ),
-                      backgroundColor: Colors.orange,
-                      elevation: 0,
-                      shadowColor: Colors.transparent,
-                      visualDensity: VisualDensity.compact,
-                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      padding: EdgeInsets.symmetric(horizontal: 4),
-                      shape: StadiumBorder(side: BorderSide.none),
-                    ),
-                  ),
+                Text(
+                  title,
+                  style: const TextStyle(fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(height: 4),
+                Text(subtitle),
               ],
             ),
-          ],
-        ),
-      );
-    } catch (e) {
-      print('🔴 Error in _notificationTile for "$title": $e');
-      return const ListTile(title: Text("Error rendering notification"));
-    }
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(time.split('T')[0], style: const TextStyle(fontSize: 12)),
+              if (isNew)
+                const Padding(
+                  padding: EdgeInsets.only(top: 4),
+                  child: Chip(
+                    label: Text(
+                      "New",
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                    backgroundColor: Colors.orange,
+                    visualDensity: VisualDensity.compact,
+                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    padding: EdgeInsets.symmetric(horizontal: 4),
+                    shape: StadiumBorder(side: BorderSide.none),
+                  ),
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _orderTile(
@@ -237,15 +249,13 @@ class HomePage extends StatelessWidget {
     String status,
     String date,
   ) {
-    print('🟢 Rendering OrderTile: orderId=$orderId, status=$status');
-
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           CircleAvatar(
-            backgroundColor: const Color.fromARGB(255, 238, 31, 145),
+            backgroundColor: AppColors.pink,
             child: Text(initials, style: const TextStyle(color: Colors.white)),
           ),
           const SizedBox(width: 12),

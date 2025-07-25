@@ -1,6 +1,9 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:http/http.dart' as http;
 import 'package:my_vendor_app/common/common_layout.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class EditContactDetailsPage extends StatefulWidget {
   const EditContactDetailsPage({super.key});
@@ -15,6 +18,52 @@ class _EditContactDetailsPageState extends State<EditContactDetailsPage> {
   final _emailController = TextEditingController(text: "ravi@techspark.com");
   final _phoneController = TextEditingController(text: "+91 9999988888");
   final _designationController = TextEditingController(text: "Director");
+
+  bool _isLoading = false;
+
+  Future<void> _submitForm() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() => _isLoading = true);
+
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('token');
+
+      final response = await http.post(
+        Uri.parse(
+          'https://vendor-admin-portal.netlify.app/api/MobileApp/vendor/contact-details',
+        ),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'contact_name': _nameController.text.trim(),
+          'contact_email': _emailController.text.trim(),
+          'contact_phone': _phoneController.text.trim(),
+          'designation': _designationController.text.trim(),
+        }),
+      );
+
+      final data = jsonDecode(response.body);
+      if (response.statusCode == 200 && data['success'] == true) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Contact details updated successfully')),
+        );
+        context.pop();
+      } else {
+        throw data['message'] ?? 'Update failed';
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(e.toString())));
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -76,8 +125,9 @@ class _EditContactDetailsPageState extends State<EditContactDetailsPage> {
       controller: controller,
       validator: (val) {
         if (required && (val == null || val.trim().isEmpty)) return "Required";
-        if (isEmail && val != null && !val.contains('@'))
+        if (isEmail && val != null && !val.contains('@')) {
           return "Invalid email";
+        }
         return null;
       },
       decoration: InputDecoration(
@@ -106,20 +156,21 @@ class _EditContactDetailsPageState extends State<EditContactDetailsPage> {
       children: [
         Expanded(
           child: FilledButton(
-            onPressed: () {
-              if (_formKey.currentState!.validate()) context.pop();
-            },
+            onPressed: _isLoading ? null : _submitForm,
             style: FilledButton.styleFrom(
               backgroundColor: const Color(0xFF7C3AED),
               padding: const EdgeInsets.symmetric(vertical: 14),
             ),
-            child: const Text("Save Changes"),
+            child:
+                _isLoading
+                    ? const CircularProgressIndicator(color: Colors.white)
+                    : const Text("Save Changes"),
           ),
         ),
         const SizedBox(width: 12),
         Expanded(
           child: OutlinedButton(
-            onPressed: () => context.go('/profile'),
+            onPressed: _isLoading ? null : () => context.go('/profile'),
             style: OutlinedButton.styleFrom(
               padding: const EdgeInsets.symmetric(vertical: 14),
             ),

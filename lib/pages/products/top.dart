@@ -1,7 +1,9 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:my_vendor_app/common/common_layout.dart';
-import 'package:my_vendor_app/data/sample_top_products.dart';
 import 'package:my_vendor_app/models/product.dart';
 
 enum ProductFilter { mostOrdered, topRated }
@@ -18,11 +20,52 @@ class _TopProductsPageState extends State<TopProductsPage> {
   String searchQuery = '';
   ProductFilter selectedFilter = ProductFilter.mostOrdered;
 
+  List<Product> _products = [];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    fetchProducts();
+  }
+
+  Future<void> fetchProducts() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('token') ?? '';
+
+      final uri = Uri.parse(
+        'https://vendor-admin-portal.netlify.app/api/MobileApp/vendor/top-products',
+      );
+      final response = await http.get(
+        uri,
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final List<dynamic> data = json.decode(response.body)['products'];
+        setState(() {
+          _products = data.map((json) => Product.fromJson(json)).toList();
+          _isLoading = false;
+        });
+      } else {
+        debugPrint('Failed to fetch products: ${response.body}');
+        setState(() => _isLoading = false);
+      }
+    } catch (e) {
+      debugPrint('Error fetching products: $e');
+      setState(() => _isLoading = false);
+    }
+  }
+
   List<Product> get filteredProducts {
     List<Product> result =
         searchQuery.isEmpty
-            ? sampleProducts
-            : sampleProducts
+            ? _products
+            : _products
                 .where(
                   (p) =>
                       p.name.toLowerCase().contains(searchQuery.toLowerCase()),
@@ -65,7 +108,6 @@ class _TopProductsPageState extends State<TopProductsPage> {
               runSpacing: 8,
               crossAxisAlignment: WrapCrossAlignment.center,
               children: [
-                // Search Field (takes remaining width)
                 ConstrainedBox(
                   constraints: const BoxConstraints(
                     minWidth: 200,
@@ -85,28 +127,19 @@ class _TopProductsPageState extends State<TopProductsPage> {
                         ),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(20),
-                          borderSide: const BorderSide(
-                            color: Colors.grey,
-                          ), // fallback
                         ),
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(20),
-                          borderSide: const BorderSide(
-                            color: Colors.grey,
-                          ), // light gray when inactive
+                          borderSide: const BorderSide(color: Colors.grey),
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(20),
-                          borderSide: const BorderSide(
-                            color: Colors.grey,
-                          ), // light gray when focused
+                          borderSide: const BorderSide(color: Colors.grey),
                         ),
                       ),
                     ),
                   ),
                 ),
-
-                // Filter Chips
                 _buildFilterChip(
                   ProductFilter.mostOrdered,
                   "Most Ordered",
@@ -119,38 +152,43 @@ class _TopProductsPageState extends State<TopProductsPage> {
                 ),
               ],
             ),
-
             const SizedBox(height: 8),
             Expanded(
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  int crossAxisCount =
-                      constraints.maxWidth > 800
-                          ? 4
-                          : constraints.maxWidth > 600
-                          ? 3
-                          : 2;
+              child:
+                  _isLoading
+                      ? const Center(child: CircularProgressIndicator())
+                      : LayoutBuilder(
+                        builder: (context, constraints) {
+                          int crossAxisCount =
+                              constraints.maxWidth > 800
+                                  ? 4
+                                  : constraints.maxWidth > 600
+                                  ? 3
+                                  : 2;
 
-                  return GridView.builder(
-                    itemCount: filteredProducts.length,
-                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: crossAxisCount,
-                      mainAxisSpacing: 12,
-                      crossAxisSpacing: 12,
-                      childAspectRatio: 0.75,
-                    ),
-                    itemBuilder: (context, index) {
-                      final product = filteredProducts[index];
-                      return GestureDetector(
-                        onTap:
-                            () =>
-                                context.go('/products/details', extra: product),
-                        child: ProductCard(product: product),
-                      );
-                    },
-                  );
-                },
-              ),
+                          return GridView.builder(
+                            itemCount: filteredProducts.length,
+                            gridDelegate:
+                                SliverGridDelegateWithFixedCrossAxisCount(
+                                  crossAxisCount: crossAxisCount,
+                                  mainAxisSpacing: 12,
+                                  crossAxisSpacing: 12,
+                                  childAspectRatio: 0.75,
+                                ),
+                            itemBuilder: (context, index) {
+                              final product = filteredProducts[index];
+                              return GestureDetector(
+                                onTap:
+                                    () => context.go(
+                                      '/products/details',
+                                      extra: product,
+                                    ),
+                                child: ProductCard(product: product),
+                              );
+                            },
+                          );
+                        },
+                      ),
             ),
           ],
         ),
@@ -216,7 +254,6 @@ class ProductCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final rating = _averageRating().toStringAsFixed(1);
     final orders = product.orderItems.length;
-
     final imageUrl =
         product.images.isNotEmpty
             ? product.images.first.url

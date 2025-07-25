@@ -14,13 +14,12 @@ class User {
   final bool isActive;
   final DateTime createdAt;
   final DateTime updatedAt;
+  final int unreadCount; // ✅ NEW FIELD
 
-  // Relations (optional or lists)
+  // Relations
   final List<Review>? reviews;
   final List<NotificationModel>? notifications;
 
-  // Stub placeholders for referenced models
-  // You can replace these with real classes once available
   final dynamic vendor;
   final dynamic customer;
   final dynamic admin;
@@ -43,11 +42,12 @@ class User {
     this.isActive = true,
     required this.createdAt,
     required this.updatedAt,
+    this.reviews,
+    this.notifications,
+    required this.unreadCount, // ✅ INIT
     this.vendor,
     this.customer,
     this.admin,
-    this.reviews,
-    this.notifications,
     this.tickets,
     this.messages,
     this.apiKeys,
@@ -71,6 +71,7 @@ class User {
       isActive: json['isActive'] ?? true,
       createdAt: DateTime.parse(json['createdAt']),
       updatedAt: DateTime.parse(json['updatedAt']),
+      unreadCount: json['unreadCount'] ?? 0, // ✅ ADD HERE
       reviews:
           json['reviews'] != null
               ? List<Review>.from(
@@ -106,6 +107,7 @@ class User {
     'isActive': isActive,
     'createdAt': createdAt.toIso8601String(),
     'updatedAt': updatedAt.toIso8601String(),
+    'unreadCount': unreadCount, // ✅ ADD TO MAP
     'reviews': reviews?.map((x) => x.toJson()).toList(),
     'notification': notifications?.map((x) => x.toJson()).toList(),
     'vendor': vendor,
