@@ -6,7 +6,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 
 class EditBusinessDetailsPage extends StatefulWidget {
-  const EditBusinessDetailsPage({super.key});
+  final Map<String, dynamic>? data;
+
+  const EditBusinessDetailsPage({super.key, this.data});
 
   @override
   State<EditBusinessDetailsPage> createState() =>
@@ -15,13 +17,24 @@ class EditBusinessDetailsPage extends StatefulWidget {
 
 class _EditBusinessDetailsPageState extends State<EditBusinessDetailsPage> {
   final _formKey = GlobalKey<FormState>();
-  final _businessNameController = TextEditingController(
-    text: "TechSpark Pvt Ltd",
-  );
-  final _gstController = TextEditingController(text: "27ABCDE1234F1Z5");
-  final _websiteController = TextEditingController(text: "www.techspark.com");
+  final _businessNameController = TextEditingController();
+  final _gstController = TextEditingController();
+  final _websiteController = TextEditingController();
 
   bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+
+    // Prefill from passed data if available
+    final data = widget.data;
+    if (data != null) {
+      _businessNameController.text = data['businessName'] ?? '';
+      _gstController.text = data['gstNumber'] ?? '';
+      _websiteController.text = data['website'] ?? '';
+    }
+  }
 
   Future<void> _submitBusinessDetails() async {
     final prefs = await SharedPreferences.getInstance();
@@ -83,15 +96,15 @@ class _EditBusinessDetailsPageState extends State<EditBusinessDetailsPage> {
                 ),
                 const SizedBox(width: 8),
                 const Text(
-                  "Edit Profile",
+                  "Edit Business Details",
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
               ],
             ),
             const SizedBox(height: 20),
-            Form(
-              key: _formKey,
-              child: Expanded(
+            Expanded(
+              child: Form(
+                key: _formKey,
                 child: Column(
                   children: [
                     _buildTextField(

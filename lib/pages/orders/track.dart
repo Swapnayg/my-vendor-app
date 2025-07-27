@@ -1,8 +1,11 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '/common/common_layout.dart';
 import '/services/api_service.dart';
+import 'package:http/http.dart' as http;
 
 class OrderTrackPage extends StatefulWidget {
   final String orderId;
@@ -21,6 +24,62 @@ class _OrderTrackPageState extends State<OrderTrackPage> {
   void initState() {
     super.initState();
     fetchOrder();
+  }
+
+  Future<void> approveOrder() async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('token');
+    if (token == null) return;
+
+    final response = await http.post(
+      Uri.parse(
+        'https://vendor-admin-portal.netlify.app/api/MobileApp/vendor/approve-order',
+      ),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode({'orderId': widget.orderId}),
+    );
+
+    if (response.statusCode == 200) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Order Approved!')));
+      fetchOrder(); // Refresh state
+    } else {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Failed to approve order')));
+    }
+  }
+
+  Future<void> rejectOrder() async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('token');
+    if (token == null) return;
+
+    final response = await http.post(
+      Uri.parse(
+        'https://vendor-admin-portal.netlify.app/api/MobileApp/vendor/reject-order',
+      ),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode({'orderId': widget.orderId}),
+    );
+
+    if (response.statusCode == 200) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Order Rejected!')));
+      fetchOrder(); // Refresh state
+    } else {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Failed to reject order')));
+    }
   }
 
   Future<void> fetchOrder() async {
@@ -310,7 +369,7 @@ class _OrderTrackPageState extends State<OrderTrackPage> {
                           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                           children: [
                             OutlinedButton(
-                              onPressed: () {},
+                              onPressed: rejectOrder,
                               style: OutlinedButton.styleFrom(
                                 foregroundColor: Colors.white,
                                 backgroundColor: Colors.orange,
@@ -323,9 +382,7 @@ class _OrderTrackPageState extends State<OrderTrackPage> {
                               child: const Text("Reject"),
                             ),
                             ElevatedButton(
-                              onPressed: () {
-                                context.go('/orders/mark-shipped');
-                              },
+                              onPressed: approveOrder,
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Colors.green,
                                 foregroundColor: Colors.white,
@@ -336,6 +393,7 @@ class _OrderTrackPageState extends State<OrderTrackPage> {
                               ),
                               child: const Text("Accept Order"),
                             ),
+
                             ElevatedButton(
                               onPressed: () {
                                 context.go('/orders/mark-shipped');

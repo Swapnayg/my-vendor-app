@@ -78,7 +78,15 @@ class _ProfilePageState extends State<ProfilePage> {
                         _buildRow("GST Number", vendor!.gstNumber ?? "-"),
                         _buildRow("Website", vendor!.website ?? "-"),
                       ],
-                      onEdit: () => context.go('/vendor/edit/business'),
+                      onEdit:
+                          () => context.go(
+                            '/vendor/edit/business',
+                            extra: {
+                              'businessName': vendor!.businessName,
+                              'gstNumber': vendor!.gstNumber,
+                              'website': vendor!.website,
+                            },
+                          ),
                     ),
                     _buildSectionCard(
                       "Contact Details",
@@ -88,15 +96,38 @@ class _ProfilePageState extends State<ProfilePage> {
                         _buildRow("Contact Phone", vendor!.contactPhone ?? "-"),
                         _buildRow("Designation", vendor!.designation ?? "-"),
                       ],
-                      onEdit: () => context.go('/vendor/edit/contact'),
+                      onEdit:
+                          () => context.go(
+                            '/vendor/edit/contact',
+                            extra: {
+                              'contactName': vendor!.contactName,
+                              'contactEmail': vendor!.contactEmail,
+                              'contactPhone': vendor!.contactPhone,
+                              'designation': vendor!.designation,
+                            },
+                          ),
                     ),
-                    _buildSectionCard("Address", [
-                      _buildRow("Phone", vendor!.phone),
-                      _buildRow("Address", vendor!.address),
-                      _buildRow("City", vendor!.city ?? "-"),
-                      _buildRow("State", vendor!.state ?? "-"),
-                      _buildRow("Zipcode", vendor!.zipcode ?? "-"),
-                    ], onEdit: () => context.go('/vendor/edit/address')),
+                    _buildSectionCard(
+                      "Address",
+                      [
+                        _buildRow("Phone", vendor!.phone),
+                        _buildRow("Address", vendor!.address),
+                        _buildRow("City", vendor!.city ?? "-"),
+                        _buildRow("State", vendor!.state ?? "-"),
+                        _buildRow("Zipcode", vendor!.zipcode ?? "-"),
+                      ],
+                      onEdit:
+                          () => context.go(
+                            '/vendor/edit/address',
+                            extra: {
+                              'phone': vendor!.phone,
+                              'address': vendor!.address,
+                              'city': vendor!.city,
+                              'state': vendor!.state,
+                              'zipcode': vendor!.zipcode,
+                            },
+                          ),
+                    ),
                     _buildSectionCard(
                       "Zone & Category",
                       [
@@ -108,7 +139,15 @@ class _ProfilePageState extends State<ProfilePage> {
                           DateFormat('MMMM dd, yyyy').format(vendor!.createdAt),
                         ),
                       ],
-                      onEdit: () => context.go('/vendor/edit/zone-category'),
+                      onEdit:
+                          () => context.go(
+                            '/vendor/edit/zone-category',
+                            extra: {
+                              'zone': vendor!.zone?.name,
+                              'category': vendor!.category?.name,
+                              'status': vendor!.status.name,
+                            },
+                          ),
                     ),
                     _buildSectionCard(
                       "KYC Documents",
@@ -117,7 +156,21 @@ class _ProfilePageState extends State<ProfilePage> {
                               .map((doc) => _buildKycRow(context, doc))
                               .toList()
                           : [_buildRow("No documents", "")],
-                      onEdit: () => context.go('/vendor/edit/kyc'),
+                      onEdit:
+                          () => context.go(
+                            '/vendor/edit/kyc',
+                            extra: {
+                              'kycDocuments':
+                                  vendor!.kycDocuments
+                                      .map(
+                                        (doc) => {
+                                          'type': doc.type,
+                                          'fileUrl': doc.fileUrl,
+                                        },
+                                      )
+                                      .toList(),
+                            },
+                          ),
                     ),
                     const SizedBox(height: 20),
                     TextButton.icon(

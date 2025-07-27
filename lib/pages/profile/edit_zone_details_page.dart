@@ -6,7 +6,9 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 class EditZoneCategoryPage extends StatefulWidget {
-  const EditZoneCategoryPage({super.key});
+  final Map<String, dynamic>? data;
+
+  const EditZoneCategoryPage({super.key, this.data});
 
   @override
   State<EditZoneCategoryPage> createState() => _EditZoneCategoryPageState();
@@ -14,8 +16,8 @@ class EditZoneCategoryPage extends StatefulWidget {
 
 class _EditZoneCategoryPageState extends State<EditZoneCategoryPage> {
   final _formKey = GlobalKey<FormState>();
-  String? _selectedZone = 'South Zone';
-  String? _selectedCategory = 'Electronics';
+  String? _selectedZone;
+  String? _selectedCategory;
 
   final List<String> zones = [
     'North Zone',
@@ -29,6 +31,14 @@ class _EditZoneCategoryPageState extends State<EditZoneCategoryPage> {
     'Grocery',
     'Health',
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    final data = widget.data;
+    _selectedZone = data?['zone'] ?? 'South Zone';
+    _selectedCategory = data?['category'] ?? 'Electronics';
+  }
 
   Future<void> _submitZoneCategory() async {
     final prefs = await SharedPreferences.getInstance();

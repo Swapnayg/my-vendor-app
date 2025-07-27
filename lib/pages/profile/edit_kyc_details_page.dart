@@ -8,7 +8,8 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 class EditKYCPage extends StatefulWidget {
-  const EditKYCPage({super.key});
+  final Map<String, dynamic>? data;
+  const EditKYCPage({super.key, this.data});
 
   @override
   State<EditKYCPage> createState() => _EditKYCPageState();
@@ -34,6 +35,20 @@ class _EditKYCPageState extends State<EditKYCPage> {
   }
 
   Future<void> _loadExistingKyc() async {
+    if (widget.data != null) {
+      setState(() {
+        _existingPanUrl = widget.data!['pan'];
+        _existingAddressUrl = widget.data!['address_proof'];
+        _existingGstUrl = widget.data!['gst_certificate'];
+
+        if (_existingPanUrl != null) _panFileName = 'Existing PAN uploaded';
+        if (_existingAddressUrl != null)
+          _addressFileName = 'Existing Address Proof uploaded';
+        if (_existingGstUrl != null) _gstFileName = 'Existing GST uploaded';
+      });
+      return;
+    }
+
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('token');
     if (token == null) return;
@@ -51,6 +66,11 @@ class _EditKYCPageState extends State<EditKYCPage> {
         _existingPanUrl = data['pan'];
         _existingAddressUrl = data['address_proof'];
         _existingGstUrl = data['gst_certificate'];
+
+        if (_existingPanUrl != null) _panFileName = 'Existing PAN uploaded';
+        if (_existingAddressUrl != null)
+          _addressFileName = 'Existing Address Proof uploaded';
+        if (_existingGstUrl != null) _gstFileName = 'Existing GST uploaded';
       });
     }
   }

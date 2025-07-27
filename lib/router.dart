@@ -75,24 +75,40 @@ final GoRouter router = GoRouter(
     GoRoute(path: '/profile', builder: (context, state) => const ProfilePage()),
     GoRoute(
       path: '/vendor/edit/business',
-      builder: (context, state) => const EditBusinessDetailsPage(),
+      builder: (context, state) {
+        final data = state.extra as Map<String, dynamic>?;
+        return EditBusinessDetailsPage(data: data);
+      },
     ),
     GoRoute(
       path: '/vendor/edit/contact',
-      builder: (context, state) => const EditContactDetailsPage(),
+      builder: (context, state) {
+        final data = state.extra as Map<String, dynamic>?;
+        return EditContactDetailsPage(data: data);
+      },
     ),
     GoRoute(
       path: '/vendor/edit/address',
-      builder: (context, state) => const EditAddressPage(),
+      builder: (context, state) {
+        final data = state.extra as Map<String, dynamic>?;
+        return EditAddressPage(data: data);
+      },
     ),
     GoRoute(
       path: '/vendor/edit/zone-category',
-      builder: (context, state) => const EditZoneCategoryPage(),
+      builder: (context, state) {
+        final data = state.extra as Map<String, dynamic>?;
+        return EditZoneCategoryPage(data: data);
+      },
     ),
     GoRoute(
       path: '/vendor/edit/kyc',
-      builder: (context, state) => const EditKYCPage(),
+      builder: (context, state) {
+        final data = state.extra as Map<String, dynamic>?;
+        return EditKYCPage(data: data);
+      },
     ),
+
     GoRoute(
       path: '/messages',
       builder: (context, state) => const MessagesPage(),

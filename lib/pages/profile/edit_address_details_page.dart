@@ -6,7 +6,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:my_vendor_app/common/common_layout.dart';
 
 class EditAddressPage extends StatefulWidget {
-  const EditAddressPage({super.key});
+  final Map<String, dynamic>? data;
+
+  const EditAddressPage({super.key, this.data});
 
   @override
   State<EditAddressPage> createState() => _EditAddressPageState();
@@ -25,7 +27,22 @@ class _EditAddressPageState extends State<EditAddressPage> {
   @override
   void initState() {
     super.initState();
-    _fetchAddress();
+    _populateInitialData();
+  }
+
+  void _populateInitialData() {
+    final data = widget.data;
+
+    if (data != null) {
+      _phoneController.text = data['phone'] ?? '';
+      _addressController.text = data['address'] ?? '';
+      _cityController.text = data['city'] ?? '';
+      _stateController.text = data['state'] ?? '';
+      _zipcodeController.text = data['zipcode'] ?? '';
+      setState(() => isLoading = false);
+    } else {
+      _fetchAddress(); // fallback
+    }
   }
 
   Future<void> _fetchAddress() async {

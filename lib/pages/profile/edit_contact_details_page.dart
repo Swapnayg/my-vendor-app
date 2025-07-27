@@ -6,7 +6,9 @@ import 'package:my_vendor_app/common/common_layout.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class EditContactDetailsPage extends StatefulWidget {
-  const EditContactDetailsPage({super.key});
+  final Map<String, dynamic>? data;
+
+  const EditContactDetailsPage({super.key, this.data});
 
   @override
   State<EditContactDetailsPage> createState() => _EditContactDetailsPageState();
@@ -14,12 +16,33 @@ class EditContactDetailsPage extends StatefulWidget {
 
 class _EditContactDetailsPageState extends State<EditContactDetailsPage> {
   final _formKey = GlobalKey<FormState>();
-  final _nameController = TextEditingController(text: "Ravi Kumar");
-  final _emailController = TextEditingController(text: "ravi@techspark.com");
-  final _phoneController = TextEditingController(text: "+91 9999988888");
-  final _designationController = TextEditingController(text: "Director");
+  final _nameController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _phoneController = TextEditingController();
+  final _designationController = TextEditingController();
 
   bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _populateInitialData();
+  }
+
+  void _populateInitialData() {
+    final data = widget.data;
+    if (data != null) {
+      _nameController.text = data['contact_name'] ?? '';
+      _emailController.text = data['contact_email'] ?? '';
+      _phoneController.text = data['contact_phone'] ?? '';
+      _designationController.text = data['designation'] ?? '';
+    } else {
+      _nameController.text = "Ravi Kumar";
+      _emailController.text = "ravi@techspark.com";
+      _phoneController.text = "+91 9999988888";
+      _designationController.text = "Director";
+    }
+  }
 
   Future<void> _submitForm() async {
     if (!_formKey.currentState!.validate()) return;
