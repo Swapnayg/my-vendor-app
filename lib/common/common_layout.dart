@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import './vendor_drawer.dart';
+import 'dart:async';
 
 class CommonLayout extends StatefulWidget {
   final Widget body;
@@ -17,11 +18,23 @@ class CommonLayout extends StatefulWidget {
 class _CommonLayoutState extends State<CommonLayout> {
   String vendorInitial = '';
   int unreadNotifications = 0;
+  Timer? _notificationTimer; // Add this line
 
   @override
   void initState() {
     super.initState();
     fetchVendorNavbarData();
+
+    // 🔁 Set timer to refresh notifications every 60 seconds
+    _notificationTimer = Timer.periodic(const Duration(minutes: 1), (timer) {
+      fetchVendorNavbarData();
+    });
+  }
+
+  @override
+  void dispose() {
+    _notificationTimer?.cancel(); // ✅ Prevent memory leaks
+    super.dispose();
   }
 
   Future<void> fetchVendorNavbarData() async {
@@ -34,25 +47,34 @@ class _CommonLayoutState extends State<CommonLayout> {
       'https://vendor-admin-portal.netlify.app/api/MobileApp/vendor/navbar_data',
     );
 
-    final response = await http.get(
-      url,
-      headers: {'Authorization': 'Bearer $token'},
-    );
+    try {
+      final response = await http.get(
+        url,
+        headers: {'Authorization': 'Bearer $token'},
+      );
 
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-      final username = data['username'] ?? 'V';
-      final notifications = data['unreadNotifications'] ?? 0;
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final username = data['username'] ?? 'V';
+        final notifications = data['unreadNotifications'] ?? 0;
 
-      setState(() {
-        vendorInitial = username.isNotEmpty ? username[0].toUpperCase() : 'V';
-        unreadNotifications = notifications;
-      });
-    } else {
-      setState(() {
-        vendorInitial = 'V';
-        unreadNotifications = 0;
-      });
+        if (mounted) {
+          setState(() {
+            vendorInitial =
+                username.isNotEmpty ? username[0].toUpperCase() : 'V';
+            unreadNotifications = notifications;
+          });
+        }
+      } else {
+        if (mounted) {
+          setState(() {
+            vendorInitial = 'V';
+            unreadNotifications = 0;
+          });
+        }
+      }
+    } catch (e) {
+      // Optional: handle error (network issues etc.)
     }
   }
 
