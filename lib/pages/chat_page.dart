@@ -1,7 +1,6 @@
-import 'dart:convert';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:http/http.dart' as http;
 import 'package:my_vendor_app/common/common_layout.dart';
 import 'package:my_vendor_app/models/user.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -17,85 +16,53 @@ class ChatPage extends StatefulWidget {
 }
 
 class _ChatPageState extends State<ChatPage> {
-  List<Map<String, dynamic>> messages = [];
-  bool isLoading = true;
   final TextEditingController messageController = TextEditingController();
 
   int? vendorId;
-  String? token;
 
   @override
   void initState() {
     super.initState();
-    initializeChat();
+    initializeVendor();
   }
 
-  Future<void> initializeChat() async {
+  Future<void> initializeVendor() async {
     final prefs = await SharedPreferences.getInstance();
     vendorId = prefs.getInt('userId');
-    token = prefs.getString('token');
-
-    if (vendorId == null || token == null) {
-      setState(() => isLoading = false);
-      return;
-    }
-
-    await fetchChatMessages();
+    setState(() {});
   }
 
-  Future<void> fetchChatMessages() async {
-    setState(() => isLoading = true);
+  String get chatId => '$vendorId-${widget.customerId}';
 
-    final uri = Uri.parse(
-      "https://vendor-admin-portal.netlify.app/api/MobileApp/vendor/chat",
-    );
-    final response = await http.post(
-      uri,
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $token',
-      },
-      body: jsonEncode({'vendorId': vendorId, 'customerId': widget.customerId}),
-    );
-
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
-      setState(() {
-        messages = List<Map<String, dynamic>>.from(data['data']);
-        isLoading = false;
-      });
-    } else {
-      print("Fetch failed: ${response.body}");
-      setState(() => isLoading = false);
-    }
+  Stream<QuerySnapshot> getChatMessagesStream() {
+    return FirebaseFirestore.instance
+        .collection('chats')
+        .doc(chatId)
+        .collection('messages')
+        .orderBy('sentAt', descending: false)
+        .snapshots();
   }
 
-  Future<void> sendMessage() async {
-    final text = messageController.text.trim();
-    if (text.isEmpty || vendorId == null || token == null) return;
+  Future<void> sendMessageToFirestore(String text) async {
+    if (vendorId == null || text.trim().isEmpty) return;
 
-    final uri = Uri.parse(
-      "https://vendor-admin-portal.netlify.app/api/MobileApp/vendor/sendmessage",
-    );
-    final response = await http.post(
-      uri,
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $token',
-      },
-      body: jsonEncode({
-        'vendorId': vendorId,
-        'customerId': widget.customerId,
-        'text': text,
-      }),
-    );
+    final messageData = {
+      'senderId': vendorId.toString(),
+      'content': text.trim(),
+      'sentAt': Timestamp.now(),
+    };
 
-    if (response.statusCode == 200) {
-      messageController.clear();
-      await fetchChatMessages();
-    } else {
-      print("Send failed: ${response.body}");
-    }
+    final chatRef = FirebaseFirestore.instance.collection('chats').doc(chatId);
+
+    // Ensure chat document exists
+    await chatRef.set({
+      'vendorId': vendorId,
+      'customerId': widget.customerId,
+      'createdAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
+
+    // Add the message
+    await chatRef.collection('messages').add(messageData);
   }
 
   @override
@@ -127,27 +94,47 @@ class _ChatPageState extends State<ChatPage> {
           // Chat body
           Expanded(
             child:
-                isLoading
+                vendorId == null
                     ? const Center(child: CircularProgressIndicator())
-                    : ListView.builder(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 12,
-                      ),
-                      itemCount: messages.length,
-                      itemBuilder: (context, index) {
-                        final message = messages[index];
-                        final isSentByMe =
-                            message['senderId'].toString() != widget.customerId;
-                        return ChatBubble(
-                          text: message['text'] ?? '',
-                          time: message['createdAt']?.toString() ?? '',
-                          isSentByMe: isSentByMe,
-                          avatarUrl:
-                              isSentByMe
-                                  ? 'https://i.pravatar.cc/150?img=11'
-                                  : (widget.user.avatarUrl ??
-                                      'https://i.pravatar.cc/150?img=1'),
+                    : StreamBuilder<QuerySnapshot>(
+                      stream: getChatMessagesStream(),
+                      builder: (context, snapshot) {
+                        if (!snapshot.hasData) {
+                          return const Center(
+                            child: CircularProgressIndicator(),
+                          );
+                        }
+
+                        final docs = snapshot.data!.docs;
+
+                        return ListView.builder(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 12,
+                          ),
+                          itemCount: docs.length,
+                          itemBuilder: (context, index) {
+                            final data =
+                                docs[index].data() as Map<String, dynamic>;
+                            final isSentByMe =
+                                data['senderId'] != widget.customerId;
+
+                            return ChatBubble(
+                              text: data['content'] ?? '',
+                              time:
+                                  (data['sentAt'] as Timestamp?)
+                                      ?.toDate()
+                                      .toLocal()
+                                      .toString() ??
+                                  '',
+                              isSentByMe: isSentByMe,
+                              avatarUrl:
+                                  isSentByMe
+                                      ? 'https://i.pravatar.cc/150?img=11'
+                                      : (widget.user.avatarUrl ??
+                                          'https://i.pravatar.cc/150?img=1'),
+                            );
+                          },
                         );
                       },
                     ),
@@ -189,7 +176,10 @@ class _ChatPageState extends State<ChatPage> {
           ),
           const SizedBox(width: 8),
           GestureDetector(
-            onTap: sendMessage,
+            onTap: () {
+              sendMessageToFirestore(messageController.text);
+              messageController.clear();
+            },
             child: const CircleAvatar(
               radius: 22,
               backgroundColor: Color(0xFF5E4AE3),
