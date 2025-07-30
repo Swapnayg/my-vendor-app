@@ -242,7 +242,7 @@ class _AddProductPageState extends State<AddProductPage> {
       }
       // TODO: Replace with secure token retrieval
       final url = Uri.parse(
-        'https://vendor-admin-portal.netlify.app/api/MobileApp/vendor/add-product',
+        'http://localhost:3000/api/MobileApp/vendor/add-product',
       );
 
       final response = await http.post(

@@ -28,7 +28,7 @@ class _HomePageState extends State<HomePage> {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('token');
     final url = Uri.parse(
-      "https://vendor-admin-portal.netlify.app/api/MobileApp/vendor/main-details",
+      "http://localhost:3000/api/MobileApp/vendor/main-details",
     );
 
     final response = await http.get(

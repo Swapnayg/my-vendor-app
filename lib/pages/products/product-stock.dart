@@ -36,9 +36,7 @@ class _ProductStockUpdatePageState extends State<ProductStockUpdatePage> {
 
     try {
       final response = await http.post(
-        Uri.parse(
-          'https://vendor-admin-portal.netlify.app/api/MobileApp/vendor/update-stock',
-        ),
+        Uri.parse('http://localhost:3000/api/MobileApp/vendor/update-stock'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
@@ -77,9 +75,7 @@ class _ProductStockUpdatePageState extends State<ProductStockUpdatePage> {
 
     try {
       final response = await http.post(
-        Uri.parse(
-          'https://vendor-admin-portal.netlify.app/api/MobileApp/vendor/update-stock',
-        ),
+        Uri.parse('http://localhost:3000/api/MobileApp/vendor/update-stock'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',

@@ -45,9 +45,7 @@ class _SettingsPageState extends State<SettingsPage> {
     }
 
     final response = await http.get(
-      Uri.parse(
-        'https://vendor-admin-portal.netlify.app/api/MobileApp/vendor/settings',
-      ),
+      Uri.parse('http://localhost:3000/api/MobileApp/vendor/settings'),
       headers: {'Authorization': 'Bearer $token'},
     );
 
@@ -125,7 +123,7 @@ class _SettingsPageState extends State<SettingsPage> {
     }
 
     final uri = Uri.parse(
-      'https://vendor-admin-portal.netlify.app/api/MobileApp/vendor/settings',
+      'http://localhost:3000/api/MobileApp/vendor/settings',
     );
 
     final body = {

@@ -88,9 +88,7 @@ class _LoginScreenState extends State<LoginScreen> {
       if (user != null) {
         // ✅ Supabase login success
 
-        final uri = Uri.parse(
-          'https://vendor-admin-portal.netlify.app/api/auth/verify-user',
-        );
+        final uri = Uri.parse('http://localhost:3000/api/auth/verify-user');
         final verifyRes = await http.post(
           uri,
           headers: {'Content-Type': 'application/json'},

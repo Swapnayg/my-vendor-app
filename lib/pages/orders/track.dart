@@ -32,9 +32,7 @@ class _OrderTrackPageState extends State<OrderTrackPage> {
     if (token == null) return;
 
     final response = await http.post(
-      Uri.parse(
-        'https://vendor-admin-portal.netlify.app/api/MobileApp/vendor/approve-order',
-      ),
+      Uri.parse('http://localhost:3000/api/MobileApp/vendor/approve-order'),
       headers: {
         'Authorization': 'Bearer $token',
         'Content-Type': 'application/json',
@@ -60,9 +58,7 @@ class _OrderTrackPageState extends State<OrderTrackPage> {
     if (token == null) return;
 
     final response = await http.post(
-      Uri.parse(
-        'https://vendor-admin-portal.netlify.app/api/MobileApp/vendor/reject-order',
-      ),
+      Uri.parse('http://localhost:3000/api/MobileApp/vendor/reject-order'),
       headers: {
         'Authorization': 'Bearer $token',
         'Content-Type': 'application/json',

@@ -34,7 +34,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     try {
       final response = await http.post(
         Uri.parse(
-          'https://vendor-admin-portal.netlify.app/api/forgot-password',
+          'http://localhost:3000/api/forgot-password',
         ), // adjust to your API base URL if needed
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'email': email}),

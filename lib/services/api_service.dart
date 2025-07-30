@@ -3,8 +3,7 @@ import 'package:http/http.dart' as http;
 
 class ApiService {
   final String token;
-  final String baseUrl =
-      'https://vendor-admin-portal.netlify.app/api/MobileApp';
+  final String baseUrl = 'http://localhost:3000/api/MobileApp';
 
   ApiService({required this.token});
 

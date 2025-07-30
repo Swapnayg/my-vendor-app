@@ -31,9 +31,7 @@ class _TicketManagementPageState extends State<TicketManagementPage> {
       if (token == null) throw Exception('Token not found');
 
       final response = await http.get(
-        Uri.parse(
-          'https://vendor-admin-portal.netlify.app/api/MobileApp/vendor/tickets',
-        ),
+        Uri.parse('http://localhost:3000/api/MobileApp/vendor/tickets'),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',

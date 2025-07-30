@@ -54,9 +54,7 @@ class _EditKYCPageState extends State<EditKYCPage> {
     if (token == null) return;
 
     final response = await http.get(
-      Uri.parse(
-        'https://vendor-admin-portal.netlify.app/api/MobileApp/vendor/kyc-details',
-      ),
+      Uri.parse('http://localhost:3000/api/MobileApp/vendor/kyc-details'),
       headers: {'Authorization': 'Bearer $token'},
     );
 
@@ -139,9 +137,7 @@ class _EditKYCPageState extends State<EditKYCPage> {
             : _existingGstUrl;
 
     final response = await http.post(
-      Uri.parse(
-        'https://vendor-admin-portal.netlify.app/api/MobileApp/vendor/kyc-details',
-      ),
+      Uri.parse('http://localhost:3000/api/MobileApp/vendor/kyc-details'),
       headers: {
         'Authorization': 'Bearer $token',
         'Content-Type': 'application/json',

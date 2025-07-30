@@ -33,9 +33,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
       final token = prefs.getString('token') ?? '';
 
       final response = await http.get(
-        Uri.parse(
-          'https://vendor-admin-portal.netlify.app/api/MobileApp/vendor/notifications',
-        ),
+        Uri.parse('http://localhost:3000/api/MobileApp/vendor/notifications'),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',

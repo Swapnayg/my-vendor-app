@@ -32,7 +32,7 @@ class _InventoryPageState extends State<InventoryPage> {
       final token = prefs.getString('token') ?? '';
 
       final uri = Uri.parse(
-        'https://vendor-admin-portal.netlify.app/api/MobileApp/vendor/inventory',
+        'http://localhost:3000/api/MobileApp/vendor/inventory',
       );
       final response = await http.get(
         uri,

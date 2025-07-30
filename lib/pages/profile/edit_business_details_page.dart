@@ -48,7 +48,7 @@ class _EditBusinessDetailsPageState extends State<EditBusinessDetailsPage> {
     }
 
     final uri = Uri.parse(
-      'https://vendor-admin-portal.netlify.app/api/MobileApp/vendor/business_details',
+      'http://localhost:3000/api/MobileApp/vendor/business_details',
     );
     final response = await http.post(
       uri,

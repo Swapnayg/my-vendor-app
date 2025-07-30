@@ -58,7 +58,7 @@ class _ReportsPageState extends State<ReportsPage> {
       throw Exception("Token not found");
     }
     final url = Uri.parse(
-      'https://vendor-admin-portal.netlify.app/api/MobileApp/vendor/reports?month=$monthIndex&year=$selectedYear',
+      'http://localhost:3000/api/MobileApp/vendor/reports?month=$monthIndex&year=$selectedYear',
     );
     final response = await http.get(
       url,

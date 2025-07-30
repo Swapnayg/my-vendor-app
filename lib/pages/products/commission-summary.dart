@@ -34,7 +34,7 @@ class _CommissionSummaryPageState extends State<CommissionSummaryPage> {
       final token = prefs.getString('token') ?? '';
 
       final uri = Uri.parse(
-        'https://vendor-admin-portal.netlify.app/api/MobileApp/vendor/commission-summary',
+        'http://localhost:3000/api/MobileApp/vendor/commission-summary',
       );
       final response = await http.get(
         uri,

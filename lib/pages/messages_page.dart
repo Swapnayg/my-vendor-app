@@ -30,9 +30,7 @@ class _MessagesPageState extends State<MessagesPage> {
       final token = prefs.getString('token');
 
       final response = await http.get(
-        Uri.parse(
-          'https://vendor-admin-portal.netlify.app/api/MobileApp/vendor/customers',
-        ),
+        Uri.parse('http://localhost:3000/api/MobileApp/vendor/customers'),
         headers: {'Authorization': 'Bearer $token'},
       );
 

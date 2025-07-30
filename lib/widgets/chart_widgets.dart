@@ -40,7 +40,7 @@ class _ChartDataPageState extends State<ChartDataPage> {
     if (token == null) return;
 
     final uri = Uri.parse(
-      'https://vendor-admin-portal.netlify.app/api/MobileApp/vendor/chart-data',
+      'http://localhost:3000/api/MobileApp/vendor/chart-data',
     );
 
     try {

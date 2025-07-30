@@ -35,7 +35,7 @@ class _SalesRevenuePageState extends State<SalesRevenuePage> {
       }
 
       final uri = Uri.parse(
-        'https://vendor-admin-portal.netlify.app/api/MobileApp/vendor/sales-revenue',
+        'http://localhost:3000/api/MobileApp/vendor/sales-revenue',
       );
 
       final res = await http.get(

@@ -36,9 +36,7 @@ class _ProfilePageState extends State<ProfilePage> {
       }
 
       final res = await http.get(
-        Uri.parse(
-          'https://vendor-admin-portal.netlify.app/api/MobileApp/vendor/profile',
-        ),
+        Uri.parse('http://localhost:3000/api/MobileApp/vendor/profile'),
         headers: {'Authorization': 'Bearer $token'},
       );
 
@@ -210,7 +208,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
                             final res = await http.post(
                               Uri.parse(
-                                'https://vendor-admin-portal.netlify.app/api/MobileApp/vendor/delete-vendor',
+                                'http://localhost:3000/api/MobileApp/vendor/delete-vendor',
                               ),
                               headers: {
                                 'Authorization': 'Bearer $token',

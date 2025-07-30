@@ -71,9 +71,7 @@ class _RaiseTicketPageState extends State<RaiseTicketPage> {
     final token = prefs.getString('token');
 
     final res = await http.post(
-      Uri.parse(
-        'https://vendor-admin-portal.netlify.app/api/MobileApp/vendor/ticket-submission',
-      ),
+      Uri.parse('http://localhost:3000/api/MobileApp/vendor/ticket-submission'),
       headers: {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer $token',

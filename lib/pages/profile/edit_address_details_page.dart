@@ -51,9 +51,7 @@ class _EditAddressPageState extends State<EditAddressPage> {
     if (token == null) return;
 
     final response = await http.get(
-      Uri.parse(
-        "https://vendor-admin-portal.netlify.app/api/MobileApp/vendor/address_details",
-      ),
+      Uri.parse("http://localhost:3000/api/MobileApp/vendor/address_details"),
       headers: {"Authorization": "Bearer $token"},
     );
 
@@ -83,9 +81,7 @@ class _EditAddressPageState extends State<EditAddressPage> {
     };
 
     final response = await http.post(
-      Uri.parse(
-        "https://vendor-admin-portal.netlify.app/api/MobileApp/vendor/update-address",
-      ),
+      Uri.parse("http://localhost:3000/api/MobileApp/vendor/update-address"),
       headers: {
         "Authorization": "Bearer $token",
         "Content-Type": "application/json",

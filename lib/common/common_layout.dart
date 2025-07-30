@@ -44,7 +44,7 @@ class _CommonLayoutState extends State<CommonLayout> {
     if (token == null) return;
 
     final url = Uri.parse(
-      'https://vendor-admin-portal.netlify.app/api/MobileApp/vendor/navbar_data',
+      'http://localhost:3000/api/MobileApp/vendor/navbar_data',
     );
 
     try {

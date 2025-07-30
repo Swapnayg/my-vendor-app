@@ -51,7 +51,7 @@ class _EditZoneCategoryPageState extends State<EditZoneCategoryPage> {
     }
 
     final uri = Uri.parse(
-      "https://vendor-admin-portal.netlify.app/api/MobileApp/vendor/zone-details",
+      "http://localhost:3000/api/MobileApp/vendor/zone-details",
     );
 
     final response = await http.post(

@@ -42,7 +42,7 @@ class _MarkOrderShippedPageState extends State<MarkOrderShippedPage> {
       }
 
       final uri = Uri.parse(
-        'https://vendor-admin-portal.netlify.app/api/MobileApp/vendor/mark-order-shipped',
+        'http://localhost:3000/api/MobileApp/vendor/mark-order-shipped',
       );
 
       final response = await http.post(

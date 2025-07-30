@@ -46,9 +46,7 @@ class _VendorDrawerState extends State<VendorDrawer> {
     if (token == null) return;
 
     final response = await http.get(
-      Uri.parse(
-        'https://vendor-admin-portal.netlify.app/api/MobileApp/vendor/profile',
-      ),
+      Uri.parse('http://localhost:3000/api/MobileApp/vendor/profile'),
       headers: {'Authorization': 'Bearer $token'},
     );
 

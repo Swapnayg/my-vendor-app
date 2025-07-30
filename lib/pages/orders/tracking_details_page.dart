@@ -50,7 +50,7 @@ class _TrackingDetailsPageState extends State<TrackingDetailsPage> {
       final token = prefs.getString('token') ?? '';
 
       final uri = Uri.parse(
-        'https://vendor-admin-portal.netlify.app/api/MobileApp/vendor/track-details',
+        'http://localhost:3000/api/MobileApp/vendor/track-details',
       );
 
       final response = await http.post(
@@ -101,7 +101,7 @@ class _TrackingDetailsPageState extends State<TrackingDetailsPage> {
       final token = prefs.getString('token') ?? '';
 
       final uri = Uri.parse(
-        'https://vendor-admin-portal.netlify.app/api/MobileApp/vendor/track-live',
+        'http://localhost:3000/api/MobileApp/vendor/track-live',
       );
 
       final response = await http.post(

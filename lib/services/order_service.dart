@@ -6,7 +6,7 @@ import '../models/order.dart';
 class OrderService {
   static Future<List<Order>> fetchOrders(String token) async {
     final url = Uri.parse(
-      'https://vendor-admin-portal.netlify.app/api/MobileApp/vendor/order-management',
+      'http://localhost:3000/api/MobileApp/vendor/order-management',
     );
     final response = await http.get(
       url,

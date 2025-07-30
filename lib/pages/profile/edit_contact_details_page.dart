@@ -54,9 +54,7 @@ class _EditContactDetailsPageState extends State<EditContactDetailsPage> {
       final token = prefs.getString('token');
 
       final response = await http.post(
-        Uri.parse(
-          'https://vendor-admin-portal.netlify.app/api/MobileApp/vendor/contact-details',
-        ),
+        Uri.parse('http://localhost:3000/api/MobileApp/vendor/contact-details'),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
