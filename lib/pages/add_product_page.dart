@@ -7,9 +7,8 @@ import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:http/http.dart' as http;
 import 'package:my_vendor_app/common/common_layout.dart';
-import 'package:my_vendor_app/models/compliance.dart';
 import 'package:my_vendor_app/models/product.dart';
-import 'package:my_vendor_app/models/product_image.dart';
+import 'package:my_vendor_app/models/product_category.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class AddProductPage extends StatefulWidget {
@@ -23,6 +22,7 @@ class AddProductPage extends StatefulWidget {
 
 class _AddProductPageState extends State<AddProductPage> {
   final _formKey = GlobalKey<FormState>();
+  bool _isSaving = false;
   late String _name;
   late String _description;
   late double _price;
@@ -31,6 +31,9 @@ class _AddProductPageState extends State<AddProductPage> {
   late int _stock;
   int? _vendorId;
   int? _categoryId;
+
+  List<ProductCategory> _categories = [];
+  bool _loadingCategories = true;
 
   List<String> _imageUrls = [];
   List<bool> _imageUploading = [];
@@ -55,6 +58,7 @@ class _AddProductPageState extends State<AddProductPage> {
     _categoryId = data?.categoryId;
     _imageUrls = data?.images.map((e) => e.url).toList() ?? [];
     _imageUploading = List.generate(_imageUrls.length, (_) => false);
+    _fetchCategories();
 
     if (data?.compliance != null && data!.compliance!.isNotEmpty) {
       _complianceList =
@@ -62,8 +66,8 @@ class _AddProductPageState extends State<AddProductPage> {
               .map(
                 (c) => {
                   'type': c.type ?? '',
-                  'fileUrl': c.documentUrl ?? '',
-                  'fileName': c.documentUrl?.split('/').last ?? '',
+                  'fileUrl': c.fileUrl ?? '',
+                  'fileName': c.fileUrl?.split('/').last ?? '',
                   'uploading': false,
                 },
               )
@@ -78,6 +82,47 @@ class _AddProductPageState extends State<AddProductPage> {
       _price = _calculatePrice();
       _priceController.text = _price.toStringAsFixed(2);
     });
+  }
+
+  Future<void> _fetchCategories() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('token');
+
+      if (token == null) {
+        debugPrint('Token not found.');
+        setState(() => _loadingCategories = false);
+        return;
+      }
+
+      final response = await http.get(
+        Uri.parse(
+          'http://localhost:3000/api/MobileApp/vendor/product-categories',
+        ),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final decoded = jsonDecode(response.body);
+        final List data = decoded['data'];
+
+        setState(() {
+          _categories =
+              data.map((json) => ProductCategory.fromJson(json)).toList();
+          _loadingCategories = false;
+          print(_categories);
+        });
+      } else {
+        debugPrint('Failed to load categories: ${response.statusCode}');
+        setState(() => _loadingCategories = false);
+      }
+    } catch (e) {
+      debugPrint('Error fetching categories: $e');
+      setState(() => _loadingCategories = false);
+    }
   }
 
   Future<void> _pickImage() async {
@@ -189,47 +234,14 @@ class _AddProductPageState extends State<AddProductPage> {
       return;
     }
 
-    final newProduct = Product(
-      id: widget.initialData?.id ?? 0,
-      name: _name,
-      description: _description,
-      basePrice: _basePrice,
-      taxRate: _taxRate,
-      price: _price,
-      stock: _stock,
-      vendorId: _vendorId ?? 0,
-      categoryId: _categoryId,
-      status: ProductStatus.pending,
-      createdAt: DateTime.now(),
-      updatedAt: DateTime.now(),
-      images:
-          _imageUrls
-              .map(
-                (url) => ProductImage(
-                  id: 0,
-                  url: url,
-                  productId: widget.initialData?.id ?? 0,
-                  createdAt: DateTime.now(),
-                ),
-              )
-              .toList(),
-      vendor: null,
-      category: null,
-      compliance:
-          _complianceList
-              .map(
-                (c) => Compliance(
-                  id: 0,
-                  productId: widget.initialData?.id ?? 0,
-                  type: c['type'],
-                  documentUrl: c['fileUrl'],
-                ),
-              )
-              .toList(),
-      orderItems: [],
-      notifications: [],
-      reviews: [],
-    );
+    if (_categoryId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please select a category.')),
+      );
+      return;
+    }
+
+    setState(() => _isSaving = true); // ✅ Start loading
 
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -240,7 +252,29 @@ class _AddProductPageState extends State<AddProductPage> {
         );
         return;
       }
-      // TODO: Replace with secure token retrieval
+
+      final requestBody = {
+        if (isEditMode)
+          'id': widget.initialData!.id, // Only include ID on update
+        'name': _name,
+        'description': _description,
+        'basePrice': _basePrice,
+        'taxRate': _taxRate,
+        'price': _price,
+        'stock': _stock,
+        'categoryId': _categoryId,
+        'imageUrls': _imageUrls,
+        'compliance':
+            _complianceList
+                .where(
+                  (c) =>
+                      c['fileUrl'] != null &&
+                      c['fileUrl'].toString().isNotEmpty,
+                )
+                .map((c) => {'type': c['type'], 'fileUrl': c['fileUrl']})
+                .toList(),
+      };
+
       final url = Uri.parse(
         'http://localhost:3000/api/MobileApp/vendor/add-product',
       );
@@ -251,7 +285,7 @@ class _AddProductPageState extends State<AddProductPage> {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
         },
-        body: jsonEncode(newProduct.toJson()),
+        body: jsonEncode(requestBody),
       );
 
       if (response.statusCode == 200) {
@@ -263,15 +297,17 @@ class _AddProductPageState extends State<AddProductPage> {
         context.go('/products/management');
       } else {
         debugPrint('Error: ${response.body}');
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Failed to submit product.')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to submit product.')),
+        );
       }
     } catch (e) {
       debugPrint('Exception: $e');
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text('Something went wrong.')));
+      ).showSnackBar(const SnackBar(content: Text('Something went wrong.')));
+    } finally {
+      setState(() => _isSaving = false); // ✅ Stop loading
     }
   }
 
@@ -314,6 +350,26 @@ class _AddProductPageState extends State<AddProductPage> {
                             ? 'Product name is required'
                             : null,
               ),
+
+              const SizedBox(height: 10),
+              _loadingCategories
+                  ? const CircularProgressIndicator()
+                  : DropdownButtonFormField<int>(
+                    value: _categoryId,
+                    items:
+                        _categories.map((cat) {
+                          return DropdownMenuItem(
+                            value: cat.id,
+                            child: Text(cat.name),
+                          );
+                        }).toList(),
+                    onChanged: (val) => setState(() => _categoryId = val),
+                    decoration: const InputDecoration(labelText: 'Category'),
+                    validator:
+                        (val) =>
+                            val == null ? 'Please select a category' : null,
+                  ),
+
               const SizedBox(height: 10),
 
               TextFormField(
@@ -483,7 +539,7 @@ class _AddProductPageState extends State<AddProductPage> {
               const SizedBox(height: 30),
               Center(
                 child: ElevatedButton(
-                  onPressed: _saveProduct,
+                  onPressed: _isSaving ? null : _saveProduct,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.orange,
                     foregroundColor: Colors.white,
@@ -495,7 +551,19 @@ class _AddProductPageState extends State<AddProductPage> {
                       borderRadius: BorderRadius.circular(8),
                     ),
                   ),
-                  child: Text(isEditMode ? 'Update Product' : 'Save Product'),
+                  child:
+                      _isSaving
+                          ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                          : Text(
+                            isEditMode ? 'Update Product' : 'Save Product',
+                          ),
                 ),
               ),
             ],

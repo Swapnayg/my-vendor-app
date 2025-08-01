@@ -69,6 +69,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   children: [
                     _buildHeaderCard(context, vendor!),
                     const SizedBox(height: 16),
+
                     _buildSectionCard(
                       "Business Details",
                       [
@@ -130,7 +131,30 @@ class _ProfilePageState extends State<ProfilePage> {
                       "Zone & Category",
                       [
                         _buildRow("Category", vendor!.category?.name ?? "-"),
-                        _buildRow("Zone", vendor!.zone?.name ?? "-"),
+                        _buildRow(
+                          "Zone(s)",
+                          vendor!.zones.isNotEmpty
+                              ? vendor!.zones
+                                  .map((vz) => vz.zone.name)
+                                  .join(', ')
+                              : "-",
+                        ),
+                        _buildRow(
+                          "Country(s)",
+                          vendor!.zones.isNotEmpty
+                              ? vendor!.zones
+                                  .map((vz) => vz.zone.country ?? "-")
+                                  .join(', ')
+                              : "-",
+                        ),
+                        _buildRow(
+                          "Region(s)",
+                          vendor!.zones.isNotEmpty
+                              ? vendor!.zones
+                                  .map((vz) => vz.zone.region ?? "-")
+                                  .join(', ')
+                              : "-",
+                        ),
                         _buildRow("Status", vendor!.status.name),
                         _buildRow(
                           "Created At",
@@ -141,9 +165,12 @@ class _ProfilePageState extends State<ProfilePage> {
                           () => context.go(
                             '/vendor/edit/zone-category',
                             extra: {
-                              'zone': vendor!.zone?.name,
-                              'category': vendor!.category?.name,
-                              'status': vendor!.status.name,
+                              'vendorId': vendor!.id,
+                              'zoneId':
+                                  vendor!.zones
+                                      .map((vz) => vz.zone.id)
+                                      .toList(),
+                              'categoryId': vendor!.category?.id,
                             },
                           ),
                     ),

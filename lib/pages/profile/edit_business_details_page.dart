@@ -16,12 +16,15 @@ class EditBusinessDetailsPage extends StatefulWidget {
 }
 
 class _EditBusinessDetailsPageState extends State<EditBusinessDetailsPage> {
+  // Add this state variable at the top of your _EditBusinessDetailsPageState
+  bool _isSubmitting = false;
+
   final _formKey = GlobalKey<FormState>();
   final _businessNameController = TextEditingController();
   final _gstController = TextEditingController();
   final _websiteController = TextEditingController();
 
-  bool _isLoading = false;
+  final bool _isLoading = false;
 
   @override
   void initState() {
@@ -67,9 +70,11 @@ class _EditBusinessDetailsPageState extends State<EditBusinessDetailsPage> {
 
     if (response.statusCode == 200 && data['success'] == true) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Business details updated successfully.")),
+        const SnackBar(
+          content: Text("Business details updated successfully."),
+          backgroundColor: Colors.green,
+        ),
       );
-      context.pop(); // go back to profile
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -131,19 +136,29 @@ class _EditBusinessDetailsPageState extends State<EditBusinessDetailsPage> {
                       children: [
                         Expanded(
                           child: FilledButton(
-                            onPressed: () async {
-                              if (_formKey.currentState!.validate()) {
-                                setState(() => _isLoading = true);
-                                await _submitBusinessDetails();
-                                setState(() => _isLoading = false);
-                              }
-                            },
+                            onPressed:
+                                _isSubmitting
+                                    ? null
+                                    : () async {
+                                      if (_formKey.currentState!.validate()) {
+                                        setState(() => _isSubmitting = true);
+                                        try {
+                                          await _submitBusinessDetails();
+                                        } finally {
+                                          if (mounted) {
+                                            setState(
+                                              () => _isSubmitting = false,
+                                            );
+                                          }
+                                        }
+                                      }
+                                    },
                             style: FilledButton.styleFrom(
                               backgroundColor: const Color(0xFF7C3AED),
                               padding: const EdgeInsets.symmetric(vertical: 14),
                             ),
                             child:
-                                _isLoading
+                                _isSubmitting
                                     ? const SizedBox(
                                       width: 20,
                                       height: 20,
@@ -158,7 +173,10 @@ class _EditBusinessDetailsPageState extends State<EditBusinessDetailsPage> {
                         const SizedBox(width: 12),
                         Expanded(
                           child: OutlinedButton(
-                            onPressed: () => context.go('/profile'),
+                            onPressed:
+                                _isSubmitting
+                                    ? null
+                                    : () => context.go('/profile'),
                             style: OutlinedButton.styleFrom(
                               padding: const EdgeInsets.symmetric(vertical: 14),
                             ),

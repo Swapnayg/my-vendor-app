@@ -1,13 +1,13 @@
 class LocationZone {
   final int id;
   final String name;
-  final String country;
+  final String? country;
   final String? region;
 
   LocationZone({
     required this.id,
     required this.name,
-    required this.country,
+    this.country,
     this.region,
   });
 

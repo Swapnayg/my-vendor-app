@@ -289,22 +289,6 @@ class _VendorDrawerState extends State<VendorDrawer> {
                     badgeCount: openTickets,
                   ),
 
-                  _drawerSection('Support'),
-                  if (expandedSections['Support'] == true) ...[
-                    _drawerItem(
-                      context,
-                      'Ticket Management',
-                      '/support/tickets',
-                      Icons.support_agent,
-                    ),
-                    _drawerItem(
-                      context,
-                      'Ticket Submission',
-                      '/support/submit',
-                      Icons.edit_note,
-                    ),
-                  ],
-
                   _drawerSection('Reports'),
                   _drawerItem(context, 'Reports', '/reports', Icons.bar_chart),
 

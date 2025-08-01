@@ -166,7 +166,7 @@ class OrderViewPage extends StatelessWidget {
                     style: Theme.of(context).textTheme.titleMedium,
                   ),
                   const SizedBox(height: 8),
-                  ...order.items!.map(
+                  ...order.items.map(
                     (item) => Padding(
                       padding: const EdgeInsets.only(bottom: 10),
                       child: Row(

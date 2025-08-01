@@ -1,15 +1,30 @@
-import 'user.dart';
-import 'vendor_category.dart';
-import 'location_zone.dart';
-import 'kyc.dart';
-import 'product.dart';
-import 'order.dart';
-import 'payout.dart';
-import 'ticket.dart';
-import 'notification.dart';
-import 'bank_account.dart';
+import 'package:my_vendor_app/models/location_zone.dart';
+import 'package:my_vendor_app/models/vendor_zone.dart';
+import 'package:my_vendor_app/models/kyc.dart';
+import 'package:my_vendor_app/models/product.dart';
+import 'package:my_vendor_app/models/order.dart';
+import 'package:my_vendor_app/models/payout.dart';
+import 'package:my_vendor_app/models/ticket.dart';
+import 'package:my_vendor_app/models/notification.dart';
+import 'package:my_vendor_app/models/bank_account.dart';
+import 'package:my_vendor_app/models/stock_movement.dart';
+import 'package:my_vendor_app/models/vendor_category.dart'; // <-- import this
 
-enum VendorStatus { PENDING, APPROVED, REJECTED }
+enum VendorStatus {
+  PENDING,
+  APPROVED,
+  REJECTED,
+  SUSPENDED;
+
+  static VendorStatus fromString(String status) {
+    return VendorStatus.values.firstWhere(
+      (e) => e.name.toUpperCase() == status.toUpperCase(),
+      orElse: () => VendorStatus.PENDING,
+    );
+  }
+
+  String toJson() => name;
+}
 
 class Vendor {
   final int id;
@@ -28,22 +43,20 @@ class Vendor {
   final String? designation;
   final VendorStatus status;
   final DateTime createdAt;
-
+  final bool isActive;
+  final DateTime? deactivatedAt;
   final int? categoryId;
-  final int? zoneId;
 
-  final User? user;
-  final VendorCategory? category;
-  final LocationZone? zone;
-
+  final VendorCategory? category; // <-- NEW
+  final List<VendorZone> zones;
   final List<KYC> kycDocuments;
   final List<Product> products;
   final List<Order> orders;
   final List<Payout> payouts;
   final List<Ticket> tickets;
   final List<NotificationModel> notification;
-
   final BankAccount? bankAccount;
+  final List<StockMovement> stockMovements;
 
   Vendor({
     required this.id,
@@ -62,18 +75,19 @@ class Vendor {
     this.designation,
     required this.status,
     required this.createdAt,
+    required this.isActive,
+    this.deactivatedAt,
     this.categoryId,
-    this.zoneId,
-    this.user,
     this.category,
-    this.zone,
-    this.kycDocuments = const [],
-    this.products = const [],
-    this.orders = const [],
-    this.payouts = const [],
-    this.tickets = const [],
-    this.notification = const [],
+    required this.zones,
+    required this.kycDocuments,
+    required this.products,
+    required this.orders,
+    required this.payouts,
+    required this.tickets,
+    required this.notification,
     this.bankAccount,
+    required this.stockMovements,
   });
 
   factory Vendor.fromJson(Map<String, dynamic> json) {
@@ -92,50 +106,78 @@ class Vendor {
       contactEmail: json['contactEmail'],
       contactPhone: json['contactPhone'],
       designation: json['designation'],
-      status: VendorStatus.values.firstWhere((e) => e.name == json['status']),
+      status: VendorStatus.fromString(json['status']),
       createdAt: DateTime.parse(json['createdAt']),
+      isActive: json['isActive'],
+      deactivatedAt:
+          json['deactivatedAt'] != null
+              ? DateTime.tryParse(json['deactivatedAt'])
+              : null,
       categoryId: json['categoryId'],
-      zoneId: json['zoneId'],
-      user: json['user'] != null ? User.fromJson(json['user']) : null,
       category:
           json['category'] != null
               ? VendorCategory.fromJson(json['category'])
               : null,
-      zone: json['zone'] != null ? LocationZone.fromJson(json['zone']) : null,
+      zones:
+          (json['zones'] as List<dynamic>?)
+              ?.map((z) {
+                final zoneMap = z as Map<String, dynamic>?;
+
+                if (zoneMap == null) return null;
+
+                return VendorZone(
+                  id: null,
+                  vendorId: json['id'],
+                  zoneId: zoneMap['id'],
+                  zone: LocationZone.fromJson(zoneMap),
+                );
+              })
+              .whereType<VendorZone>()
+              .toList() ??
+          [],
+
       kycDocuments:
-          (json['kycDocuments'] as List<dynamic>?)
-              ?.map((e) => KYC.fromJson(e))
-              .toList() ??
-          [],
+          json['kycDocuments'] != null
+              ? List<KYC>.from(json['kycDocuments'].map((k) => KYC.fromJson(k)))
+              : [],
       products:
-          (json['products'] as List<dynamic>?)
-              ?.map((e) => Product.fromJson(e))
-              .toList() ??
-          [],
+          json['products'] != null
+              ? List<Product>.from(
+                json['products'].map((p) => Product.fromJson(p)),
+              )
+              : [],
       orders:
-          (json['orders'] as List<dynamic>?)
-              ?.map((e) => Order.fromJson(e))
-              .toList() ??
-          [],
+          json['orders'] != null
+              ? List<Order>.from(json['orders'].map((o) => Order.fromJson(o)))
+              : [],
       payouts:
-          (json['payouts'] as List<dynamic>?)
-              ?.map((e) => Payout.fromJson(e))
-              .toList() ??
-          [],
+          json['payouts'] != null
+              ? List<Payout>.from(
+                json['payouts'].map((p) => Payout.fromJson(p)),
+              )
+              : [],
       tickets:
-          (json['tickets'] as List<dynamic>?)
-              ?.map((e) => Ticket.fromJson(e))
-              .toList() ??
-          [],
+          json['tickets'] != null
+              ? List<Ticket>.from(
+                json['tickets'].map((t) => Ticket.fromJson(t)),
+              )
+              : [],
       notification:
-          (json['notification'] as List<dynamic>?)
-              ?.map((e) => NotificationModel.fromJson(e))
-              .toList() ??
-          [],
+          json['notification'] != null
+              ? List<NotificationModel>.from(
+                json['notification'].map((n) => NotificationModel.fromJson(n)),
+              )
+              : [],
       bankAccount:
           json['bankAccount'] != null
               ? BankAccount.fromJson(json['bankAccount'])
               : null,
+      stockMovements:
+          json['stockMovements'] != null
+              ? List<StockMovement>.from(
+                json['stockMovements'].map((s) => StockMovement.fromJson(s)),
+              )
+              : [],
     );
   }
 
@@ -155,20 +197,21 @@ class Vendor {
       'contactEmail': contactEmail,
       'contactPhone': contactPhone,
       'designation': designation,
-      'status': status.name,
+      'status': status,
       'createdAt': createdAt.toIso8601String(),
+      'isActive': isActive,
+      'deactivatedAt': deactivatedAt?.toIso8601String(),
       'categoryId': categoryId,
-      'zoneId': zoneId,
-      'user': user?.toJson(),
-      'category': category?.toJson(),
-      'zone': zone?.toJson(),
-      'kycDocuments': kycDocuments.map((e) => e.toJson()).toList(),
-      'products': products.map((e) => e.toJson()).toList(),
-      'orders': orders.map((e) => e.toJson()).toList(),
-      'payouts': payouts.map((e) => e.toJson()).toList(),
-      'tickets': tickets.map((e) => e.toJson()).toList(),
-      'notification': notification.map((e) => e.toJson()).toList(),
+      'category': category?.toJson(), // <-- NEW
+      'zones': zones.map((z) => z.toJson()).toList(),
+      'kycDocuments': kycDocuments.map((k) => k.toJson()).toList(),
+      'products': products.map((p) => p.toJson()).toList(),
+      'orders': orders.map((o) => o.toJson()).toList(),
+      'payouts': payouts.map((p) => p.toJson()).toList(),
+      'tickets': tickets.map((t) => t.toJson()).toList(),
+      'notification': notification.map((n) => n.toJson()).toList(),
       'bankAccount': bankAccount?.toJson(),
+      'stockMovements': stockMovements.map((s) => s.toJson()).toList(),
     };
   }
 }

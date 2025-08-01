@@ -121,36 +121,41 @@ class _CommonLayoutState extends State<CommonLayout> {
         iconTheme: const IconThemeData(color: Colors.black),
         title: const Text("Vendor App", style: TextStyle(color: Colors.black)),
         actions: [
-          Stack(
-            alignment: Alignment.center,
-            children: [
-              const Icon(Icons.notifications_none, color: Colors.black),
-              if (unreadNotifications > 0)
-                Positioned(
-                  top: 5,
-                  right: 0,
-                  child: Container(
-                    padding: const EdgeInsets.all(2),
-                    decoration: const BoxDecoration(
-                      color: Colors.red,
-                      shape: BoxShape.circle,
-                    ),
-                    constraints: const BoxConstraints(
-                      minWidth: 16,
-                      minHeight: 16,
-                    ),
-                    child: Text(
-                      unreadNotifications.toString(),
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
+          IconButton(
+            onPressed: () {
+              context.go('/notifications'); // 🔁 Go to notifications page
+            },
+            icon: Stack(
+              alignment: Alignment.center,
+              children: [
+                const Icon(Icons.notifications_none, color: Colors.black),
+                if (unreadNotifications > 0)
+                  Positioned(
+                    top: 5,
+                    right: 0,
+                    child: Container(
+                      padding: const EdgeInsets.all(2),
+                      decoration: const BoxDecoration(
+                        color: Colors.red,
+                        shape: BoxShape.circle,
                       ),
-                      textAlign: TextAlign.center,
+                      constraints: const BoxConstraints(
+                        minWidth: 16,
+                        minHeight: 16,
+                      ),
+                      child: Text(
+                        unreadNotifications.toString(),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
                     ),
                   ),
-                ),
-            ],
+              ],
+            ),
           ),
           const SizedBox(width: 10),
           CircleAvatar(

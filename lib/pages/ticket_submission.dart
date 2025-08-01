@@ -1,11 +1,22 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
+import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
+import 'package:my_vendor_app/models/ticket.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '/common/common_layout.dart';
+
+const Map<TicketType, String> vendorTicketTypeLabels = {
+  TicketType.PAYMENT_ISSUE: 'Payment Issue',
+  TicketType.PRODUCT_LISTING_ISSUE: 'Product Listing Issue',
+  TicketType.INVENTORY_UPDATE_ISSUE: 'Inventory Update Issue',
+  TicketType.SHIPPING_ISSUE: 'Shipping Issue',
+};
 
 class RaiseTicketPage extends StatefulWidget {
   const RaiseTicketPage({super.key});
@@ -16,36 +27,73 @@ class RaiseTicketPage extends StatefulWidget {
 
 class _RaiseTicketPageState extends State<RaiseTicketPage> {
   final _formKey = GlobalKey<FormState>();
-  final TextEditingController _subjectController = TextEditingController();
-  final TextEditingController _descriptionController = TextEditingController();
-  String _selectedCategory = 'Technical Support';
-  File? _selectedFile;
+  final _subjectController = TextEditingController();
+  final _descriptionController = TextEditingController();
+
+  TicketType? _selectedTicketType;
+  PlatformFile? _pickedFile; // Used for both mobile and web
   bool _loading = false;
 
   Future<void> _pickFile() async {
-    final picked = await ImagePicker().pickImage(source: ImageSource.gallery);
-    if (picked != null) {
-      setState(() => _selectedFile = File(picked.path));
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        withData: kIsWeb,
+        type: FileType.custom,
+        allowedExtensions: ['jpg', 'png', 'pdf'],
+      );
+
+      if (result != null && result.files.isNotEmpty) {
+        setState(() {
+          _pickedFile = result.files.first;
+        });
+      } else {}
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Failed to pick file')));
     }
   }
 
-  Future<String?> _uploadToCloudinary(File file) async {
+  Future<String?> _uploadToCloudinary(PlatformFile file) async {
     const cloudName = 'dhas7vy3k';
     const uploadPreset = 'vendors';
     final uri = Uri.parse(
       "https://api.cloudinary.com/v1_1/$cloudName/image/upload",
     );
 
-    final request =
-        http.MultipartRequest('POST', uri)
-          ..fields['upload_preset'] = uploadPreset
-          ..files.add(await http.MultipartFile.fromPath('file', file.path));
+    final request = http.MultipartRequest('POST', uri)
+      ..fields['upload_preset'] = uploadPreset;
 
-    final response = await request.send();
-    if (response.statusCode == 200) {
-      final respData = json.decode(await response.stream.bytesToString());
-      return respData['secure_url'];
-    } else {
+    try {
+      if (file.bytes == null && file.path == null) {
+        return null;
+      }
+
+      if (kIsWeb) {
+        request.files.add(
+          http.MultipartFile.fromBytes(
+            'file',
+            file.bytes!,
+            filename: file.name,
+            contentType: MediaType('application', 'octet-stream'),
+          ),
+        );
+      } else {
+        request.files.add(
+          await http.MultipartFile.fromPath('file', file.path!),
+        );
+      }
+
+      final response = await request.send();
+      final responseData = await response.stream.bytesToString();
+
+      if (response.statusCode == 200) {
+        final jsonResp = json.decode(responseData);
+        return jsonResp['secure_url'];
+      } else {
+        return null;
+      }
+    } catch (e) {
       return null;
     }
   }
@@ -56,8 +104,8 @@ class _RaiseTicketPageState extends State<RaiseTicketPage> {
     setState(() => _loading = true);
     String? fileUrl;
 
-    if (_selectedFile != null) {
-      fileUrl = await _uploadToCloudinary(_selectedFile!);
+    if (_pickedFile != null) {
+      fileUrl = await _uploadToCloudinary(_pickedFile!);
       if (fileUrl == null) {
         setState(() => _loading = false);
         ScaffoldMessenger.of(
@@ -70,31 +118,42 @@ class _RaiseTicketPageState extends State<RaiseTicketPage> {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('token');
 
-    final res = await http.post(
-      Uri.parse('http://localhost:3000/api/MobileApp/vendor/ticket-submission'),
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $token',
-      },
-      body: jsonEncode({
-        'subject': _subjectController.text.trim(),
-        'message': _descriptionController.text.trim(),
-        'type': _selectedCategory,
-        'fileUrl': fileUrl,
-      }),
-    );
+    final requestBody = {
+      'subject': _subjectController.text.trim(),
+      'message': _descriptionController.text.trim(),
+      'type': _selectedTicketType.toString(),
+      'fileUrl': fileUrl,
+    };
 
-    setState(() => _loading = false);
-
-    if (res.statusCode == 200) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Ticket submitted successfully')),
+    try {
+      final res = await http.post(
+        Uri.parse(
+          'http://localhost:3000/api/MobileApp/vendor/ticket-submission',
+        ),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode(requestBody),
       );
-      context.go('/tickets');
-    } else {
+
+      setState(() => _loading = false);
+
+      if (res.statusCode == 200) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Ticket submitted successfully')),
+        );
+        context.go('/tickets');
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Submission failed: ${res.body}')),
+        );
+      }
+    } catch (e) {
+      setState(() => _loading = false);
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text('Failed to submit: ${res.body}')));
+      ).showSnackBar(SnackBar(content: Text('Error: $e')));
     }
   }
 
@@ -141,21 +200,20 @@ class _RaiseTicketPageState extends State<RaiseTicketPage> {
 
               const Text('Category', style: TextStyle(color: Colors.grey)),
               const SizedBox(height: 6),
-              DropdownButtonFormField<String>(
-                value: _selectedCategory,
-                items: const [
-                  DropdownMenuItem(
-                    value: 'Technical Support',
-                    child: Text('Technical Support'),
-                  ),
-                  DropdownMenuItem(value: 'Billing', child: Text('Billing')),
-                  DropdownMenuItem(value: 'General', child: Text('General')),
-                ],
+              DropdownButtonFormField<TicketType>(
+                value: _selectedTicketType,
                 onChanged:
-                    (val) => setState(
-                      () => _selectedCategory = val ?? 'Technical Support',
-                    ),
-                decoration: const InputDecoration(border: OutlineInputBorder()),
+                    (value) => setState(() => _selectedTicketType = value),
+                items:
+                    vendorTicketTypeLabels.entries.map((entry) {
+                      return DropdownMenuItem(
+                        value: entry.key,
+                        child: Text(entry.value),
+                      );
+                    }).toList(),
+                decoration: const InputDecoration(
+                  labelText: 'Select Ticket Type',
+                ),
               ),
               const SizedBox(height: 16),
 
@@ -178,7 +236,7 @@ class _RaiseTicketPageState extends State<RaiseTicketPage> {
 
               InkWell(
                 onTap: _pickFile,
-                child: DottedBorderUpload(fileSelected: _selectedFile != null),
+                child: DottedBorderUpload(fileSelected: _pickedFile != null),
               ),
               const SizedBox(height: 24),
 
@@ -234,18 +292,6 @@ class DottedBorderUpload extends StatelessWidget {
           const Text(
             'Max file size: 10MB (PNG, JPG, PDF)',
             style: TextStyle(fontSize: 12, color: Colors.grey),
-          ),
-          const SizedBox(height: 12),
-          OutlinedButton(
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Click the box to upload file')),
-              );
-            },
-            style: OutlinedButton.styleFrom(
-              side: const BorderSide(color: Color(0xFF7A5CFA)),
-            ),
-            child: const Text('Browse Files'),
           ),
         ],
       ),

@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:file_picker/file_picker.dart';
@@ -16,17 +17,19 @@ class EditKYCPage extends StatefulWidget {
 }
 
 class _EditKYCPageState extends State<EditKYCPage> {
-  File? _panFile;
-  File? _addressFile;
-  File? _gstFile;
+  PlatformFile? _panFile;
+  PlatformFile? _addressFile;
+  PlatformFile? _gstFile;
 
-  String? _panFileName = "pan_card.jpg";
-  String? _addressFileName = "address_proof.pdf";
+  String? _panFileName = "No file selected";
+  String? _addressFileName = "No file selected";
   String? _gstFileName = "No file selected";
 
   String? _existingPanUrl;
   String? _existingAddressUrl;
   String? _existingGstUrl;
+
+  bool _isSubmitting = false;
 
   @override
   void initState() {
@@ -35,56 +38,43 @@ class _EditKYCPageState extends State<EditKYCPage> {
   }
 
   Future<void> _loadExistingKyc() async {
-    if (widget.data != null) {
-      setState(() {
-        _existingPanUrl = widget.data!['pan'];
-        _existingAddressUrl = widget.data!['address_proof'];
-        _existingGstUrl = widget.data!['gst_certificate'];
-
-        if (_existingPanUrl != null) _panFileName = 'Existing PAN uploaded';
-        if (_existingAddressUrl != null)
-          _addressFileName = 'Existing Address Proof uploaded';
-        if (_existingGstUrl != null) _gstFileName = 'Existing GST uploaded';
-      });
-      return;
-    }
-
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('token');
-    if (token == null) return;
-
-    final response = await http.get(
-      Uri.parse('http://localhost:3000/api/MobileApp/vendor/kyc-details'),
-      headers: {'Authorization': 'Bearer $token'},
-    );
-
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
-      setState(() {
-        _existingPanUrl = data['pan'];
-        _existingAddressUrl = data['address_proof'];
-        _existingGstUrl = data['gst_certificate'];
-
-        if (_existingPanUrl != null) _panFileName = 'Existing PAN uploaded';
-        if (_existingAddressUrl != null)
-          _addressFileName = 'Existing Address Proof uploaded';
-        if (_existingGstUrl != null) _gstFileName = 'Existing GST uploaded';
-      });
+    if (widget.data != null && widget.data!['kycDocuments'] != null) {
+      final kycDocs = widget.data!['kycDocuments'] as List<dynamic>;
+      for (final doc in kycDocs) {
+        final type = doc['type'];
+        final fileUrl = doc['fileUrl'];
+        if (type == 'panCard') {
+          _existingPanUrl = fileUrl;
+          _panFileName = 'Existing PAN uploaded';
+        } else if (type == 'addressProof') {
+          _existingAddressUrl = fileUrl;
+          _addressFileName = 'Existing Address uploaded';
+        } else if (type == 'gstCertificate') {
+          _existingGstUrl = fileUrl;
+          _gstFileName = 'Existing GST uploaded';
+        }
+      }
     }
   }
 
-  Future<String> _uploadToCloudinary(File file) async {
+  Future<String> _uploadToCloudinary(PlatformFile file) async {
     final uri = Uri.parse(
       'https://api.cloudinary.com/v1_1/dhas7vy3k/image/upload',
     );
     final request = http.MultipartRequest('POST', uri);
-    request.fields['upload_preset'] = 'vendors'; // Replace later
-    request.files.add(await http.MultipartFile.fromPath('file', file.path));
+    request.fields['upload_preset'] = 'vendors';
+
+    if (kIsWeb) {
+      request.files.add(
+        http.MultipartFile.fromBytes('file', file.bytes!, filename: file.name),
+      );
+    } else {
+      request.files.add(await http.MultipartFile.fromPath('file', file.path!));
+    }
 
     final response = await request.send();
     final responseBody = await response.stream.bytesToString();
     final json = jsonDecode(responseBody);
-
     return json['secure_url'];
   }
 
@@ -92,74 +82,112 @@ class _EditKYCPageState extends State<EditKYCPage> {
     final result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
       allowedExtensions: ['jpg', 'jpeg', 'png', 'pdf'],
+      withData: kIsWeb,
     );
 
     if (result != null && result.files.isNotEmpty) {
-      final file = File(result.files.first.path!);
-      final name = result.files.first.name;
-
+      final pickedFile = result.files.first;
       setState(() {
-        if (docType == "PAN") {
-          _panFile = file;
-          _panFileName = name;
-        } else if (docType == "ADDRESS") {
-          _addressFile = file;
-          _addressFileName = name;
-        } else if (docType == "GST") {
-          _gstFile = file;
-          _gstFileName = name;
+        if (docType == "panCard") {
+          _panFile = pickedFile;
+          _panFileName = pickedFile.name;
+        } else if (docType == "addressProof") {
+          _addressFile = pickedFile;
+          _addressFileName = pickedFile.name;
+        } else if (docType == "gstCertificate") {
+          _gstFile = pickedFile;
+          _gstFileName = pickedFile.name;
         }
       });
     }
   }
 
   Future<void> _submitKYC() async {
+    setState(() => _isSubmitting = true);
+
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('token');
     if (token == null) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('User not authenticated')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('User not authenticated'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      setState(() => _isSubmitting = false);
       return;
     }
 
-    String? panUrl =
-        _panFile != null
-            ? await _uploadToCloudinary(_panFile!)
-            : _existingPanUrl;
-    String? addressUrl =
-        _addressFile != null
-            ? await _uploadToCloudinary(_addressFile!)
-            : _existingAddressUrl;
-    String? gstUrl =
-        _gstFile != null
-            ? await _uploadToCloudinary(_gstFile!)
-            : _existingGstUrl;
-
-    final response = await http.post(
-      Uri.parse('http://localhost:3000/api/MobileApp/vendor/kyc-details'),
-      headers: {
-        'Authorization': 'Bearer $token',
-        'Content-Type': 'application/json',
-      },
-      body: jsonEncode({
-        'pan': panUrl,
-        'address_proof': addressUrl,
-        'gst_certificate': gstUrl,
-      }),
-    );
-
-    if (response.statusCode == 200) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text("KYC updated successfully")));
-      context.pop();
-    } else {
+    if (_panFile == null && _existingPanUrl == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text("Failed to update KYC (${response.statusCode})"),
+        const SnackBar(
+          content: Text("PAN Card is required"),
+          backgroundColor: Colors.red,
         ),
       );
+      setState(() => _isSubmitting = false);
+      return;
+    }
+
+    if (_addressFile == null && _existingAddressUrl == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Address Proof is required"),
+          backgroundColor: Colors.red,
+        ),
+      );
+      setState(() => _isSubmitting = false);
+      return;
+    }
+
+    try {
+      String? panUrl =
+          _panFile != null
+              ? await _uploadToCloudinary(_panFile!)
+              : _existingPanUrl;
+      String? addressUrl =
+          _addressFile != null
+              ? await _uploadToCloudinary(_addressFile!)
+              : _existingAddressUrl;
+      String? gstUrl =
+          _gstFile != null
+              ? await _uploadToCloudinary(_gstFile!)
+              : _existingGstUrl;
+
+      final response = await http.post(
+        Uri.parse('http://localhost:3000/api/MobileApp/vendor/kyc-details'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'panCardFile': panUrl,
+          'addressProofFile': addressUrl,
+          'gstCertificateFile': gstUrl,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("KYC updated successfully"),
+            backgroundColor: Colors.green,
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("Failed to update KYC (${response.statusCode})"),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Error: $e"), backgroundColor: Colors.red),
+      );
+    } finally {
+      setState(() => _isSubmitting = false);
     }
   }
 
@@ -216,74 +244,114 @@ class _EditKYCPageState extends State<EditKYCPage> {
   @override
   Widget build(BuildContext context) {
     return CommonLayout(
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            Row(
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.arrow_back),
-                  onPressed: () => context.go('/profile'),
+      body: SafeArea(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            return SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
+              child: ConstrainedBox(
+                constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                child: IntrinsicHeight(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.arrow_back),
+                            onPressed: () => context.go('/profile'),
+                          ),
+                          const SizedBox(width: 8),
+                          const Text(
+                            "Edit KYC Documents",
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 20),
+                      const Text(
+                        "Upload new KYC documents below:",
+                        style: TextStyle(fontSize: 16),
+                      ),
+                      const SizedBox(height: 12),
+                      _buildUploadTile(
+                        label: "PAN Card",
+                        fileName: _panFileName ?? 'No file selected',
+                        onTap: () => _pickFile("panCard"),
+                      ),
+                      _buildUploadTile(
+                        label: "Address Proof",
+                        fileName: _addressFileName ?? 'No file selected',
+                        onTap: () => _pickFile("addressProof"),
+                      ),
+                      _buildUploadTile(
+                        label: "GST Certificate",
+                        fileName: _gstFileName ?? 'No file selected',
+                        onTap: () => _pickFile("gstCertificate"),
+                        isOptional: true,
+                      ),
+                      const Spacer(),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: ElevatedButton(
+                              onPressed: _isSubmitting ? null : _submitKYC,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF7C3AED),
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 14,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                textStyle: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              child:
+                                  _isSubmitting
+                                      ? const SizedBox(
+                                        width: 20,
+                                        height: 20,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          valueColor:
+                                              AlwaysStoppedAnimation<Color>(
+                                                Colors.white,
+                                              ),
+                                        ),
+                                      )
+                                      : const Text("Save Changes"),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: OutlinedButton(
+                              onPressed:
+                                  _isSubmitting
+                                      ? null
+                                      : () => context.go('/profile'),
+                              style: OutlinedButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 14,
+                                ),
+                              ),
+                              child: const Text("Cancel"),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
-                const SizedBox(width: 8),
-                const Text(
-                  "Edit KYC Documents",
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-              ],
-            ),
-            const SizedBox(height: 20),
-            const Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                "Upload new KYC documents below:",
-                style: TextStyle(fontSize: 16),
               ),
-            ),
-            const SizedBox(height: 12),
-            _buildUploadTile(
-              label: "PAN Card",
-              fileName: _panFileName ?? 'No file selected',
-              onTap: () => _pickFile("PAN"),
-            ),
-            _buildUploadTile(
-              label: "Address Proof",
-              fileName: _addressFileName ?? 'No file selected',
-              onTap: () => _pickFile("ADDRESS"),
-            ),
-            _buildUploadTile(
-              label: "GST Certificate",
-              fileName: _gstFileName ?? 'No file selected',
-              onTap: () => _pickFile("GST"),
-              isOptional: true,
-            ),
-            const Spacer(),
-            Row(
-              children: [
-                Expanded(
-                  child: FilledButton(
-                    onPressed: _submitKYC,
-                    style: FilledButton.styleFrom(
-                      backgroundColor: const Color(0xFF7C3AED),
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                    ),
-                    child: const Text("Save Changes"),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: () => context.go('/profile'),
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                    ),
-                    child: const Text("Cancel"),
-                  ),
-                ),
-              ],
-            ),
-          ],
+            );
+          },
         ),
       ),
     );

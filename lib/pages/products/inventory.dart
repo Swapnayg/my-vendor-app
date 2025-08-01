@@ -79,68 +79,83 @@ class _InventoryPageState extends State<InventoryPage> {
                 children: [
                   const SizedBox(height: 24),
                   // Custom AppBar Area
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.menu),
-                        onPressed: () {},
-                      ),
-                      const Text(
-                        'Product Inventory',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
+                  Padding(
+                    padding: EdgeInsets.symmetric(
+                      horizontal:
+                          MediaQuery.of(context).size.width *
+                          0.05, // 5% left & right
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: const [
+                        Text(
+                          'Product Inventory',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
-                      ),
-                      const CircleAvatar(
-                        backgroundImage: NetworkImage(
-                          "https://via.placeholder.com/40",
-                        ),
-                        radius: 18,
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
+
                   const SizedBox(height: 16),
                   // Search bar
-                  TextField(
-                    controller: _searchController,
-                    onChanged: (val) => setState(() => searchQuery = val),
-                    decoration: InputDecoration(
-                      hintText: "Search products...",
-                      prefixIcon: const Icon(Icons.search),
-                      suffixIcon: const Icon(Icons.filter_alt_outlined),
-                      contentPadding: const EdgeInsets.symmetric(vertical: 14),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: Colors.grey.shade300),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: Colors.grey.shade400),
+                  Padding(
+                    padding: EdgeInsets.symmetric(
+                      horizontal:
+                          MediaQuery.of(context).size.width *
+                          0.05, // 5% left & right
+                    ),
+                    child: TextField(
+                      controller: _searchController,
+                      onChanged: (val) => setState(() => searchQuery = val),
+                      decoration: InputDecoration(
+                        hintText: "Search products...",
+                        prefixIcon: const Icon(Icons.search),
+                        suffixIcon: const Icon(Icons.filter_alt_outlined),
+                        contentPadding: const EdgeInsets.symmetric(
+                          vertical: 14,
+                        ),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: Colors.grey.shade300),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: Colors.grey.shade400),
+                        ),
                       ),
                     ),
                   ),
+
                   const SizedBox(height: 16),
                   // Product List
                   Expanded(
-                    child:
-                        filteredProducts.isEmpty
-                            ? const Center(child: Text("No products found."))
-                            : ListView.separated(
-                              itemCount: filteredProducts.length,
-                              padding: const EdgeInsets.only(bottom: 24),
-                              separatorBuilder:
-                                  (_, __) => const SizedBox(height: 16),
-                              itemBuilder: (context, index) {
-                                return ProductCard(
-                                  product: filteredProducts[index],
-                                );
-                              },
-                            ),
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(
+                        horizontal:
+                            MediaQuery.of(context).size.width *
+                            0.05, // 5% left & right
+                      ),
+                      child:
+                          filteredProducts.isEmpty
+                              ? const Center(child: Text("No products found."))
+                              : ListView.separated(
+                                itemCount: filteredProducts.length,
+                                padding: const EdgeInsets.only(bottom: 24),
+                                separatorBuilder:
+                                    (_, __) => const SizedBox(height: 16),
+                                itemBuilder: (context, index) {
+                                  return ProductCard(
+                                    product: filteredProducts[index],
+                                  );
+                                },
+                              ),
+                    ),
                   ),
                 ],
               ),

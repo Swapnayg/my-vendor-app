@@ -1,3 +1,5 @@
+import 'package:my_vendor_app/models/message.dart';
+
 enum TicketType {
   GENERAL,
   TECHNICAL_ISSUE,
@@ -27,8 +29,10 @@ class Ticket {
   final int? customerId;
   final String? name;
   final String? email;
+  final String? fileUrl;
   final DateTime createdAt;
   final DateTime updatedAt;
+  final List<Message> messages; // 👈 New field
 
   Ticket({
     required this.id,
@@ -41,8 +45,10 @@ class Ticket {
     this.customerId,
     this.name,
     this.email,
+    this.fileUrl,
     required this.createdAt,
     required this.updatedAt,
+    required this.messages,
   });
 
   factory Ticket.fromJson(Map<String, dynamic> json) {
@@ -63,8 +69,14 @@ class Ticket {
       customerId: json['customerId'],
       name: json['name'],
       email: json['email'],
+      fileUrl: json['fileUrl'],
       createdAt: DateTime.parse(json['createdAt']),
       updatedAt: DateTime.parse(json['updatedAt']),
+      messages:
+          (json['messages'] as List<dynamic>?)
+              ?.map((m) => Message.fromJson(m))
+              .toList() ??
+          [],
     );
   }
 
@@ -80,8 +92,10 @@ class Ticket {
       'customerId': customerId,
       'name': name,
       'email': email,
+      'fileUrl': fileUrl,
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),
+      'messages': messages.map((m) => m.toJson()).toList(),
     };
   }
 }

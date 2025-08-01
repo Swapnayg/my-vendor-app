@@ -8,7 +8,6 @@ import 'package:my_vendor_app/pages/orders/manage-order.dart';
 import 'package:my_vendor_app/pages/orders/management.dart';
 import 'package:my_vendor_app/pages/orders/mark_order_shipped_page.dart';
 import 'package:my_vendor_app/pages/orders/order-invoice.dart';
-import 'package:my_vendor_app/pages/orders/tracking_details_page.dart';
 import 'package:my_vendor_app/pages/orders/sales-revenue.dart';
 import 'package:my_vendor_app/pages/orders/track.dart';
 import 'package:my_vendor_app/pages/products/commission-summary.dart';

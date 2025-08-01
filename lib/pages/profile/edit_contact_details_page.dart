@@ -14,12 +14,29 @@ class EditContactDetailsPage extends StatefulWidget {
   State<EditContactDetailsPage> createState() => _EditContactDetailsPageState();
 }
 
+const List<String> designationOptions = [
+  'CEO/Managing Director',
+  'General Manager',
+  'Operations Manager',
+  'Sales Manager',
+  'Marketing Manager',
+  'Business Development Manager',
+  'Project Manager',
+  'Team Lead',
+  'Senior Executive',
+  'Executive',
+  'Owner',
+  'Partner',
+  'Director',
+  'Other',
+];
+
 class _EditContactDetailsPageState extends State<EditContactDetailsPage> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _phoneController = TextEditingController();
-  final _designationController = TextEditingController();
+  String? _selectedDesignation;
 
   bool _isLoading = false;
 
@@ -32,15 +49,15 @@ class _EditContactDetailsPageState extends State<EditContactDetailsPage> {
   void _populateInitialData() {
     final data = widget.data;
     if (data != null) {
-      _nameController.text = data['contact_name'] ?? '';
-      _emailController.text = data['contact_email'] ?? '';
-      _phoneController.text = data['contact_phone'] ?? '';
-      _designationController.text = data['designation'] ?? '';
+      _nameController.text = data['contactName'] ?? '';
+      _emailController.text = data['contactEmail'] ?? '';
+      _phoneController.text = data['contactPhone'] ?? '';
+      _selectedDesignation = data['designation'] ?? '';
     } else {
       _nameController.text = "Ravi Kumar";
       _emailController.text = "ravi@techspark.com";
       _phoneController.text = "+91 9999988888";
-      _designationController.text = "Director";
+      _selectedDesignation = "Director";
     }
   }
 
@@ -60,10 +77,10 @@ class _EditContactDetailsPageState extends State<EditContactDetailsPage> {
           'Content-Type': 'application/json',
         },
         body: jsonEncode({
-          'contact_name': _nameController.text.trim(),
-          'contact_email': _emailController.text.trim(),
-          'contact_phone': _phoneController.text.trim(),
-          'designation': _designationController.text.trim(),
+          'name': _nameController.text.trim(),
+          'email': _emailController.text.trim(),
+          'phone': _phoneController.text.trim(),
+          'designation': _selectedDesignation,
         }),
       );
 
@@ -71,9 +88,15 @@ class _EditContactDetailsPageState extends State<EditContactDetailsPage> {
       if (response.statusCode == 200 && data['success'] == true) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Contact details updated successfully')),
+          const SnackBar(
+            content: Text('Contact details updated successfully'),
+            backgroundColor: Colors.green,
+          ),
         );
-        context.pop();
+
+        if (context.canPop()) {
+          context.pop();
+        } else {}
       } else {
         throw data['message'] ?? 'Update failed';
       }
@@ -123,7 +146,50 @@ class _EditContactDetailsPageState extends State<EditContactDetailsPage> {
                     const SizedBox(height: 16),
                     _buildField(_phoneController, "Contact Phone", true),
                     const SizedBox(height: 16),
-                    _buildField(_designationController, "Designation", true),
+                    DropdownButtonFormField<String>(
+                      value: _selectedDesignation,
+                      items:
+                          designationOptions.map((designation) {
+                            return DropdownMenuItem(
+                              value: designation,
+                              child: Text(designation),
+                            );
+                          }).toList(),
+                      onChanged:
+                          _isLoading
+                              ? null
+                              : (val) {
+                                setState(() => _selectedDesignation = val);
+                              },
+                      validator:
+                          (val) =>
+                              val == null || val.isEmpty ? 'Required' : null,
+                      decoration: InputDecoration(
+                        labelText: "Designation",
+                        border: OutlineInputBorder(
+                          borderSide: BorderSide(color: Colors.grey.shade300),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderSide: BorderSide(color: Colors.grey.shade300),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderSide: BorderSide(
+                            color: Colors.grey.shade400,
+                            width: 1.5,
+                          ),
+                        ),
+                        errorBorder: OutlineInputBorder(
+                          borderSide: BorderSide(color: Colors.red.shade300),
+                        ),
+                        focusedErrorBorder: OutlineInputBorder(
+                          borderSide: BorderSide(
+                            color: Colors.red.shade400,
+                            width: 1.5,
+                          ),
+                        ),
+                      ),
+                    ),
+
                     const Spacer(),
                     _buildActions(context),
                   ],

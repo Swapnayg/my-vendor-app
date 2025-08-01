@@ -15,14 +15,13 @@ class EditAddressPage extends StatefulWidget {
 }
 
 class _EditAddressPageState extends State<EditAddressPage> {
+  bool isSubmitting = false;
   final _formKey = GlobalKey<FormState>();
   final _phoneController = TextEditingController();
   final _addressController = TextEditingController();
   final _cityController = TextEditingController();
   final _stateController = TextEditingController();
   final _zipcodeController = TextEditingController();
-
-  bool isLoading = true;
 
   @override
   void initState() {
@@ -33,38 +32,11 @@ class _EditAddressPageState extends State<EditAddressPage> {
   void _populateInitialData() {
     final data = widget.data;
 
-    if (data != null) {
-      _phoneController.text = data['phone'] ?? '';
-      _addressController.text = data['address'] ?? '';
-      _cityController.text = data['city'] ?? '';
-      _stateController.text = data['state'] ?? '';
-      _zipcodeController.text = data['zipcode'] ?? '';
-      setState(() => isLoading = false);
-    } else {
-      _fetchAddress(); // fallback
-    }
-  }
-
-  Future<void> _fetchAddress() async {
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString("token");
-    if (token == null) return;
-
-    final response = await http.get(
-      Uri.parse("http://localhost:3000/api/MobileApp/vendor/address_details"),
-      headers: {"Authorization": "Bearer $token"},
-    );
-
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body)["data"];
-      _phoneController.text = data["phone"] ?? "";
-      _addressController.text = data["address"] ?? "";
-      _cityController.text = data["city"] ?? "";
-      _stateController.text = data["state"] ?? "";
-      _zipcodeController.text = data["zipcode"] ?? "";
-    }
-
-    if (mounted) setState(() => isLoading = false);
+    _phoneController.text = data?['phone'] ?? '';
+    _addressController.text = data?['address'] ?? '';
+    _cityController.text = data?['city'] ?? '';
+    _stateController.text = data?['state'] ?? '';
+    _zipcodeController.text = data?['zipcode'] ?? '';
   }
 
   Future<void> _submitUpdate() async {
@@ -80,8 +52,12 @@ class _EditAddressPageState extends State<EditAddressPage> {
       "zipcode": _zipcodeController.text,
     };
 
+    print("Sending update request with body: $body");
+
     final response = await http.post(
-      Uri.parse("http://localhost:3000/api/MobileApp/vendor/update-address"),
+      Uri.parse(
+        "http://localhost:3000/api/MobileApp/vendor/address_details",
+      ), // ✅ correct endpoint
       headers: {
         "Authorization": "Bearer $token",
         "Content-Type": "application/json",
@@ -89,15 +65,30 @@ class _EditAddressPageState extends State<EditAddressPage> {
       body: jsonEncode(body),
     );
 
+    print("Response status: ${response.statusCode}");
+    print("Response body: ${response.body}");
+
     if (response.statusCode == 200) {
       final res = jsonDecode(response.body);
       if (res["success"] == true && mounted) {
-        context.pop(); // return to previous screen
+        setState(() => isSubmitting = false); // ✅ FIXED HERE
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Address updated successfully"),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 2),
+          ),
+        );
+
+        // Wait a moment to let the user see the message
+        await Future.delayed(const Duration(milliseconds: 1500));
       } else {
         _showError("Failed to update address");
+        setState(() => isSubmitting = false); // ✅ handle error too
       }
     } else {
       _showError("Server error");
+      setState(() => isSubmitting = false);
     }
   }
 
@@ -108,55 +99,49 @@ class _EditAddressPageState extends State<EditAddressPage> {
   @override
   Widget build(BuildContext context) {
     return CommonLayout(
-      body:
-          isLoading
-              ? const Center(child: CircularProgressIndicator())
-              : Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  children: [
-                    Row(
-                      children: [
-                        IconButton(
-                          icon: const Icon(Icons.arrow_back),
-                          onPressed: () => context.go('/profile'),
-                        ),
-                        const SizedBox(width: 8),
-                        const Text(
-                          "Edit Address",
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 20),
-                    Expanded(
-                      child: Form(
-                        key: _formKey,
-                        child: SingleChildScrollView(
-                          child: Column(
-                            children: [
-                              _buildField(_phoneController, "Phone", true),
-                              const SizedBox(height: 16),
-                              _buildField(_addressController, "Address", true),
-                              const SizedBox(height: 16),
-                              _buildField(_cityController, "City", true),
-                              const SizedBox(height: 16),
-                              _buildField(_stateController, "State", true),
-                              const SizedBox(height: 16),
-                              _buildField(_zipcodeController, "Zipcode", true),
-                              const SizedBox(height: 30),
-                              _buildActions(),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
+      body: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            Row(
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.arrow_back),
+                  onPressed: () => context.go('/profile'),
+                ),
+                const SizedBox(width: 8),
+                const Text(
+                  "Edit Address",
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+            Expanded(
+              child: Form(
+                key: _formKey,
+                child: SingleChildScrollView(
+                  child: Column(
+                    children: [
+                      _buildField(_phoneController, "Phone", true),
+                      const SizedBox(height: 16),
+                      _buildField(_addressController, "Address", true),
+                      const SizedBox(height: 16),
+                      _buildField(_cityController, "City", true),
+                      const SizedBox(height: 16),
+                      _buildField(_stateController, "State", true),
+                      const SizedBox(height: 16),
+                      _buildField(_zipcodeController, "Zipcode", true),
+                      const SizedBox(height: 30),
+                      _buildActions(),
+                    ],
+                  ),
                 ),
               ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -194,23 +179,53 @@ class _EditAddressPageState extends State<EditAddressPage> {
     return Row(
       children: [
         Expanded(
-          child: FilledButton(
-            onPressed: () {
-              if (_formKey.currentState!.validate()) {
-                _submitUpdate();
-              }
-            },
-            style: FilledButton.styleFrom(
+          child: ElevatedButton(
+            onPressed:
+                isSubmitting
+                    ? null
+                    : () async {
+                      final valid = _formKey.currentState!.validate();
+                      if (valid) {
+                        setState(() => isSubmitting = true);
+                        try {
+                          await _submitUpdate();
+                        } finally {
+                          if (mounted) {
+                            setState(() => isSubmitting = false);
+                          }
+                        }
+                      }
+                    },
+            style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF7C3AED),
+              foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(vertical: 14),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+              textStyle: const TextStyle(
+                fontWeight: FontWeight.w600,
+                fontSize: 16,
+              ),
+              elevation: 0,
             ),
-            child: const Text("Save Changes"),
+            child:
+                isSubmitting
+                    ? const SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(
+                        color: Colors.white,
+                        strokeWidth: 2,
+                      ),
+                    )
+                    : const Text("Save Changes"),
           ),
         ),
         const SizedBox(width: 12),
         Expanded(
           child: OutlinedButton(
-            onPressed: () => context.go('/profile'),
+            onPressed: isSubmitting ? null : () => context.go('/profile'),
             style: OutlinedButton.styleFrom(
               padding: const EdgeInsets.symmetric(vertical: 14),
             ),

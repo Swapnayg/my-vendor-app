@@ -141,11 +141,11 @@ class ViewProductPage extends StatelessWidget {
                 Text("Type: ${compliance.type}"),
                 const SizedBox(height: 6),
 
-                if (compliance.documentUrl != null)
+                if (compliance.fileUrl != null)
                   GestureDetector(
-                    onTap: () => _launchURL(compliance.documentUrl!),
+                    onTap: () => _launchURL(compliance.fileUrl!),
                     child: Text(
-                      compliance.documentUrl!,
+                      compliance.fileUrl!,
                       style: const TextStyle(
                         color: Colors.blue,
                         decoration: TextDecoration.underline,
@@ -155,8 +155,8 @@ class ViewProductPage extends StatelessWidget {
 
                 const SizedBox(height: 10),
 
-                if (compliance.documentUrl != null)
-                  _buildDocumentPreview(compliance.documentUrl!),
+                if (compliance.fileUrl != null)
+                  _buildDocumentPreview(compliance.fileUrl!),
 
                 const SizedBox(height: 20),
               ],

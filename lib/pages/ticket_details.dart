@@ -1,53 +1,70 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:my_vendor_app/models/message.dart';
 import '/common/common_layout.dart';
 import '/models/ticket.dart';
-
-final List<Map<String, dynamic>> _chatMock = [
-  {
-    'sender': 'ME',
-    'message': 'Hello, I\'m experiencing a delay with my recent payment...',
-    'time': '10:05 AM',
-  },
-  {
-    'sender': 'TS',
-    'message':
-        'Hello! Thank you for reaching out. Could you provide the transaction ID?',
-    'time': '10:07 AM',
-  },
-  {
-    'sender': 'ME',
-    'message': 'Certainly. The transaction ID is TXN-123456789.',
-    'time': '10:08 AM',
-  },
-  {
-    'sender': 'TS',
-    'message':
-        'Thank you. The payment is currently being processed. It will complete within 2 hours.',
-    'time': '10:15 AM',
-  },
-  {
-    'sender': 'ME',
-    'message': 'Understood. Is there anything I need to do on my end?',
-    'time': '10:18 AM',
-  },
-  {
-    'sender': 'TS',
-    'message':
-        'No, we will notify you once completed. Thank you for your patience!',
-    'time': '10:20 AM',
-  },
-  {
-    'sender': 'ME',
-    'message': 'Alright, great. Thanks for the update!',
-    'time': '10:22 AM',
-  },
-];
 
 class TicketDetailsPage extends StatelessWidget {
   final Ticket ticket;
 
   const TicketDetailsPage({super.key, required this.ticket});
+
+  Widget _buildMessageFromMessage(BuildContext context, Message msg) {
+    final bool isMe = !msg.isAdmin;
+    final bubbleColor = isMe ? const Color(0xFFF2F0FF) : Colors.white;
+    final align = isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start;
+    final avatarColor = isMe ? Colors.deepOrange : const Color(0xFF40B28C);
+    final senderLabel = isMe ? 'ME' : 'TS';
+    final time = TimeOfDay.fromDateTime(msg.createdAt).format(context);
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Column(
+        crossAxisAlignment: align,
+        children: [
+          Row(
+            mainAxisAlignment:
+                isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              if (!isMe)
+                CircleAvatar(
+                  radius: 12,
+                  backgroundColor: avatarColor,
+                  child: Text(
+                    senderLabel,
+                    style: const TextStyle(fontSize: 10, color: Colors.white),
+                  ),
+                ),
+              if (!isMe) const SizedBox(width: 6),
+              Flexible(
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: bubbleColor,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Text(msg.content),
+                ),
+              ),
+              if (isMe) const SizedBox(width: 6),
+              if (isMe)
+                CircleAvatar(
+                  radius: 12,
+                  backgroundColor: avatarColor,
+                  child: Text(
+                    senderLabel,
+                    style: const TextStyle(fontSize: 10, color: Colors.white),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(time, style: const TextStyle(fontSize: 11, color: Colors.grey)),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -55,7 +72,7 @@ class TicketDetailsPage extends StatelessWidget {
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // AppBar (inside body)
+          // Header
           Row(
             children: [
               IconButton(
@@ -71,7 +88,7 @@ class TicketDetailsPage extends StatelessWidget {
           ),
           const SizedBox(height: 16),
 
-          // Issue Info
+          // Ticket Info Card
           Container(
             padding: const EdgeInsets.all(16),
             margin: const EdgeInsets.symmetric(horizontal: 12),
@@ -111,6 +128,26 @@ class TicketDetailsPage extends StatelessWidget {
           ),
 
           const SizedBox(height: 24),
+
+          // Instruction Note
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16),
+            child: Card(
+              color: Color(0xFFFFF9C4), // Light yellow
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.all(Radius.circular(12)),
+              ),
+              child: Padding(
+                padding: EdgeInsets.all(12),
+                child: Text(
+                  '📩 For any further questions or communication regarding this ticket, please respond directly to the email you received.',
+                  style: TextStyle(fontSize: 13.5, color: Colors.black87),
+                ),
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 24),
           const Padding(
             padding: EdgeInsets.symmetric(horizontal: 16),
             child: Text(
@@ -120,104 +157,16 @@ class TicketDetailsPage extends StatelessWidget {
           ),
           const SizedBox(height: 16),
 
-          // Chat Bubbles
+          // Message Bubbles
           Expanded(
             child: ListView(
               padding: const EdgeInsets.symmetric(horizontal: 16),
-              children: _chatMock.map((chat) => _buildMessage(chat)).toList(),
+              children:
+                  ticket.messages
+                      .map((msg) => _buildMessageFromMessage(context, msg))
+                      .toList(),
             ),
           ),
-
-          const Divider(height: 1),
-          // Input box
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            decoration: const BoxDecoration(color: Colors.white),
-            child: Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    decoration: InputDecoration(
-                      hintText: 'Type your reply here...',
-                      filled: true,
-                      fillColor: const Color(0xFFF4F4F6),
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 12,
-                      ),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(24),
-                        borderSide: BorderSide.none,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                CircleAvatar(
-                  radius: 22,
-                  backgroundColor: const Color(0xFF7A5CFA),
-                  child: const Icon(Icons.send, color: Colors.white),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildMessage(Map<String, dynamic> chat) {
-    final bool isMe = chat['sender'] == 'ME';
-    final bubbleColor = isMe ? const Color(0xFFF2F0FF) : Colors.white;
-    final align = isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start;
-    final avatarColor = isMe ? Colors.deepOrange : const Color(0xFF40B28C);
-    final sender = chat['sender'];
-    final time = chat['time'];
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
-      child: Column(
-        crossAxisAlignment: align,
-        children: [
-          Row(
-            mainAxisAlignment:
-                isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              if (!isMe)
-                CircleAvatar(
-                  radius: 12,
-                  backgroundColor: avatarColor,
-                  child: const Text(
-                    'TS',
-                    style: TextStyle(fontSize: 10, color: Colors.white),
-                  ),
-                ),
-              if (!isMe) const SizedBox(width: 6),
-              Flexible(
-                child: Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: bubbleColor,
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Text(chat['message']),
-                ),
-              ),
-              if (isMe) const SizedBox(width: 6),
-              if (isMe)
-                CircleAvatar(
-                  radius: 12,
-                  backgroundColor: avatarColor,
-                  child: const Text(
-                    'ME',
-                    style: TextStyle(fontSize: 10, color: Colors.white),
-                  ),
-                ),
-            ],
-          ),
-          const SizedBox(height: 4),
-          Text(time, style: const TextStyle(fontSize: 11, color: Colors.grey)),
         ],
       ),
     );

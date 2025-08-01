@@ -73,7 +73,7 @@ class _OrderManagementPageState extends State<OrderManagementPage> {
           DateFormat(
             'dd MMM yyyy',
           ).format(order.createdAt).toLowerCase().contains(lowerSearch) ||
-          order.items!.any(
+          order.items.any(
             (item) => item.product!.name.toLowerCase().contains(lowerSearch),
           );
 
@@ -217,8 +217,7 @@ class _OrderManagementPageState extends State<OrderManagementPage> {
   }
 
   Widget _buildOrderCard(Order order) {
-    final firstItem =
-        order.items?.isNotEmpty == true ? order.items!.first : null;
+    final firstItem = order.items.isNotEmpty == true ? order.items.first : null;
     final product = firstItem?.product;
     final productImage =
         product?.images.isNotEmpty == true ? product!.images.first.url : null;

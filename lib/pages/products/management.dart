@@ -45,16 +45,17 @@ class _ProductManagementPageState extends State<ProductManagementPage> {
     );
 
     try {
-      final response = await http.get(
+      final response = await http.post(
         uri,
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
         },
+        body: jsonEncode({}),
       );
 
       if (response.statusCode == 200) {
-        final List<dynamic> data = json.decode(response.body)['products'];
+        final List<dynamic> data = json.decode(response.body)['data'];
         final products = data.map((json) => Product.fromJson(json)).toList();
 
         setState(() {
@@ -97,11 +98,40 @@ class _ProductManagementPageState extends State<ProductManagementPage> {
     });
   }
 
-  void _deleteProduct(Product product) {
-    setState(() {
-      allProducts.remove(product);
-      _filterProducts();
-    });
+  Future<void> _deleteProduct(Product product) async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('token');
+
+    if (token == null) {
+      // Optionally show an error/snackbar
+      print("Token not found");
+      return;
+    }
+
+    try {
+      final response = await http.post(
+        Uri.parse('http://localhost:3000/api/MobileApp/vendor/delete-product'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({'productId': product.id}),
+      );
+
+      if (response.statusCode == 200) {
+        setState(() {
+          allProducts.remove(product);
+          _filterProducts(); // Apply any active filters
+        });
+      } else {
+        final data = jsonDecode(response.body);
+        print("Delete failed: ${data['error'] ?? 'Unknown error'}");
+        // Optionally show a snackbar with failure
+      }
+    } catch (e) {
+      print("Delete error: $e");
+      // Optionally show a snackbar with error
+    }
   }
 
   @override

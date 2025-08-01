@@ -27,6 +27,41 @@ class _NotificationsPageState extends State<NotificationsPage> {
     fetchNotifications();
   }
 
+  Future<void> markNotificationAsRead({
+    String? notificationId,
+    bool markAll = false,
+  }) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('token');
+
+      if (token == null) return;
+
+      final response = await http.post(
+        Uri.parse(
+          'http://localhost:3000/api/MobileApp/vendor/mark-notification',
+        ),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          if (markAll) 'markAll': true,
+          if (!markAll && notificationId != null)
+            'notificationId': notificationId,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        // Optional: log or show success
+      } else {
+        print("Failed to mark notification(s): ${response.body}");
+      }
+    } catch (e) {
+      print("Error marking notification(s): $e");
+    }
+  }
+
   Future<void> fetchNotifications() async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -42,7 +77,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
 
       if (response.statusCode == 200) {
         final jsonData = jsonDecode(response.body);
-        final List<dynamic> data = jsonData['data'];
+        final List<dynamic> data = jsonData['notifications'];
 
         setState(() {
           allNotifications =
@@ -192,11 +227,13 @@ class _NotificationsPageState extends State<NotificationsPage> {
             Align(
               alignment: Alignment.centerRight,
               child: TextButton(
-                onPressed: () {
+                onPressed: () async {
+                  await markNotificationAsRead(markAll: true);
+
                   setState(() {
                     allNotifications =
                         allNotifications
-                            .map((n) => n.read ? n : n.copyWith(read: true))
+                            .map((n) => n.copyWith(read: true))
                             .toList();
                   });
                 },
@@ -220,8 +257,12 @@ class _NotificationsPageState extends State<NotificationsPage> {
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: ListTile(
-                              onTap: () {
+                              onTap: () async {
                                 if (!notif.read) {
+                                  await markNotificationAsRead(
+                                    notificationId: notif.id.toString(),
+                                  );
+
                                   setState(() {
                                     final indexInAll = allNotifications
                                         .indexWhere((n) => n.id == notif.id);
@@ -232,6 +273,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
                                   });
                                 }
                               },
+
                               leading: CircleAvatar(
                                 backgroundColor: Colors.pink.shade50,
                                 child: Icon(

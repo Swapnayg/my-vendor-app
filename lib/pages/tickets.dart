@@ -63,22 +63,22 @@ class _TicketManagementPageState extends State<TicketManagementPage> {
   @override
   Widget build(BuildContext context) {
     return CommonLayout(
-      body: Column(
-        children: [
-          const Padding(
-            padding: EdgeInsets.fromLTRB(16, 12, 16, 8),
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                "Support Tickets",
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
+      body: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: Column(
+          children: [
+            const Padding(
+              padding: EdgeInsets.fromLTRB(0, 12, 0, 8),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  "Support Tickets",
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
+                ),
               ),
             ),
-          ),
-          const SizedBox(height: 12),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-            child: SizedBox(
+            const SizedBox(height: 12),
+            SizedBox(
               width: double.infinity,
               child: ElevatedButton.icon(
                 onPressed: () => context.go('/tickets/raise'),
@@ -92,23 +92,23 @@ class _TicketManagementPageState extends State<TicketManagementPage> {
                 ),
               ),
             ),
-          ),
-          Expanded(
-            child:
-                isLoading
-                    ? const Center(child: CircularProgressIndicator())
-                    : tickets.isEmpty
-                    ? const Center(child: Text("No tickets found"))
-                    : ListView.separated(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      itemCount: tickets.length,
-                      separatorBuilder: (_, __) => const SizedBox(height: 12),
-                      itemBuilder: (context, index) {
-                        return TicketCard(ticket: tickets[index]);
-                      },
-                    ),
-          ),
-        ],
+            const SizedBox(height: 12),
+            Expanded(
+              child:
+                  isLoading
+                      ? const Center(child: CircularProgressIndicator())
+                      : tickets.isEmpty
+                      ? const Center(child: Text("No tickets found"))
+                      : ListView.separated(
+                        itemCount: tickets.length,
+                        separatorBuilder: (_, __) => const SizedBox(height: 12),
+                        itemBuilder: (context, index) {
+                          return TicketCard(ticket: tickets[index]);
+                        },
+                      ),
+            ),
+          ],
+        ),
       ),
     );
   }

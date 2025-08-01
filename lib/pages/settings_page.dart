@@ -275,8 +275,9 @@ class _SettingsPageState extends State<SettingsPage> {
         keyboardType: keyboardType,
         validator: (value) {
           if (value == null || value.trim().isEmpty) return 'Required field';
-          if (pattern != null && !RegExp(pattern).hasMatch(value.trim()))
+          if (pattern != null && !RegExp(pattern).hasMatch(value.trim())) {
             return errorMsg;
+          }
           return null;
         },
         decoration: InputDecoration(

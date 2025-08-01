@@ -95,102 +95,109 @@ class _TopProductsPageState extends State<TopProductsPage> {
     return CommonLayout(
       body: Padding(
         padding: const EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              "Top Products",
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 12),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              crossAxisAlignment: WrapCrossAlignment.center,
-              children: [
-                ConstrainedBox(
-                  constraints: const BoxConstraints(
-                    minWidth: 200,
-                    maxWidth: 300,
-                  ),
-                  child: SizedBox(
-                    height: 42,
-                    child: TextField(
-                      controller: _searchController,
-                      onChanged: (val) => setState(() => searchQuery = val),
-                      decoration: InputDecoration(
-                        hintText: "Search...",
-                        prefixIcon: const Icon(Icons.search),
-                        contentPadding: const EdgeInsets.symmetric(
-                          vertical: 0,
-                          horizontal: 12,
-                        ),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(20),
-                          borderSide: const BorderSide(color: Colors.grey),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(20),
-                          borderSide: const BorderSide(color: Colors.grey),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: 16.0,
+          ), // Or use MediaQuery for % width
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                "Top Products",
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: [
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(
+                      minWidth: 200,
+                      maxWidth: 300,
+                    ),
+                    child: SizedBox(
+                      height: 42,
+                      child: TextField(
+                        controller: _searchController,
+                        onChanged: (val) => setState(() => searchQuery = val),
+                        decoration: InputDecoration(
+                          hintText: "Search...",
+                          prefixIcon: const Icon(Icons.search),
+                          contentPadding: const EdgeInsets.symmetric(
+                            vertical: 0,
+                            horizontal: 12,
+                          ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(20),
+                            borderSide: const BorderSide(color: Colors.grey),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(20),
+                            borderSide: const BorderSide(color: Colors.grey),
+                          ),
                         ),
                       ),
                     ),
                   ),
-                ),
-                _buildFilterChip(
-                  ProductFilter.mostOrdered,
-                  "Most Ordered",
-                  Colors.pink,
-                ),
-                _buildFilterChip(
-                  ProductFilter.topRated,
-                  "Top Rated",
-                  Colors.orange,
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Expanded(
-              child:
-                  _isLoading
-                      ? const Center(child: CircularProgressIndicator())
-                      : LayoutBuilder(
-                        builder: (context, constraints) {
-                          int crossAxisCount =
-                              constraints.maxWidth > 800
-                                  ? 4
-                                  : constraints.maxWidth > 600
-                                  ? 3
-                                  : 2;
+                  _buildFilterChip(
+                    ProductFilter.mostOrdered,
+                    "Most Ordered",
+                    Colors.pink,
+                  ),
+                  _buildFilterChip(
+                    ProductFilter.topRated,
+                    "Top Rated",
+                    Colors.orange,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Expanded(
+                child:
+                    _isLoading
+                        ? const Center(child: CircularProgressIndicator())
+                        : _products.isEmpty
+                        ? const Center(child: Text("No products yet."))
+                        : LayoutBuilder(
+                          builder: (context, constraints) {
+                            int crossAxisCount =
+                                constraints.maxWidth > 800
+                                    ? 4
+                                    : constraints.maxWidth > 600
+                                    ? 3
+                                    : 2;
 
-                          return GridView.builder(
-                            itemCount: filteredProducts.length,
-                            gridDelegate:
-                                SliverGridDelegateWithFixedCrossAxisCount(
-                                  crossAxisCount: crossAxisCount,
-                                  mainAxisSpacing: 12,
-                                  crossAxisSpacing: 12,
-                                  childAspectRatio: 0.75,
-                                ),
-                            itemBuilder: (context, index) {
-                              final product = filteredProducts[index];
-                              return GestureDetector(
-                                onTap:
-                                    () => context.go(
-                                      '/products/details',
-                                      extra: product,
-                                    ),
-                                child: ProductCard(product: product),
-                              );
-                            },
-                          );
-                        },
-                      ),
-            ),
-          ],
+                            return GridView.builder(
+                              itemCount: filteredProducts.length,
+                              gridDelegate:
+                                  SliverGridDelegateWithFixedCrossAxisCount(
+                                    crossAxisCount: crossAxisCount,
+                                    mainAxisSpacing: 12,
+                                    crossAxisSpacing: 12,
+                                    childAspectRatio: 0.75,
+                                  ),
+                              itemBuilder: (context, index) {
+                                final product = filteredProducts[index];
+                                return GestureDetector(
+                                  onTap:
+                                      () => context.go(
+                                        '/products/details',
+                                        extra: product,
+                                      ),
+                                  child: ProductCard(product: product),
+                                );
+                              },
+                            );
+                          },
+                        ),
+              ),
+            ],
+          ),
         ),
       ),
     );
