@@ -35,6 +35,7 @@ class Product {
   final ProductStatus status;
   final DateTime createdAt;
   final DateTime updatedAt;
+  final double? defaultCommissionPct;
 
   // Relations
   final Vendor? vendor;
@@ -65,6 +66,7 @@ class Product {
     this.notifications = const [],
     this.images = const [],
     this.reviews = const [],
+    this.defaultCommissionPct,
   });
 
   factory Product.fromJson(Map<String, dynamic> json) => Product(
@@ -110,6 +112,7 @@ class Product {
             ?.map((e) => Review.fromJson(e))
             .toList() ??
         [],
+    defaultCommissionPct: (json['defaultCommissionPct'] as num?)?.toDouble(),
   );
 
   Map<String, dynamic> toJson() => {
@@ -131,5 +134,6 @@ class Product {
     'notifications': notifications.map((e) => e.toJson()).toList(),
     'images': images.map((e) => e.toJson()).toList(),
     'reviews': reviews.map((e) => e.toJson()).toList(),
+    'defaultCommissionPct': defaultCommissionPct,
   };
 }

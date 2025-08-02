@@ -19,18 +19,41 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
 
   List<int> get yearOptions => [DateTime.now().year - 1, DateTime.now().year];
 
-  List<FlSpot> get dummySpots {
-    int daysInMonth = DateUtils.getDaysInMonth(selectedYear, selectedMonth);
-    return List.generate(
-      daysInMonth,
-      (i) => FlSpot(i.toDouble(), (i * 2.3 % 20 + 5).toDouble()),
-    );
+  Map<int, int> get dailyOrderCount {
+    final map = <int, int>{};
+    for (var item in widget.product.orderItems) {
+      if (item.createdAt.year == selectedYear &&
+          item.createdAt.month == selectedMonth) {
+        map[item.createdAt.day] = (map[item.createdAt.day] ?? 0) + 1;
+      }
+    }
+    return map;
+  }
+
+  Map<int, double> get dailyRevenue {
+    final map = <int, double>{};
+    for (var item in widget.product.orderItems) {
+      if (item.createdAt.year == selectedYear &&
+          item.createdAt.month == selectedMonth) {
+        map[item.createdAt.day] = (map[item.createdAt.day] ?? 0) + item.price;
+      }
+    }
+    return map;
+  }
+
+  List<FlSpot> get chartSpots {
+    final orderMap = dailyOrderCount;
+    int days = DateUtils.getDaysInMonth(selectedYear, selectedMonth);
+    return List.generate(days, (i) {
+      final day = i + 1;
+      return FlSpot(i.toDouble(), (orderMap[day] ?? 0).toDouble());
+    });
   }
 
   List<String> get dayLabels {
-    int daysInMonth = DateUtils.getDaysInMonth(selectedYear, selectedMonth);
+    int days = DateUtils.getDaysInMonth(selectedYear, selectedMonth);
     return List.generate(
-      daysInMonth,
+      days,
       (i) =>
           DateFormat('d').format(DateTime(selectedYear, selectedMonth, i + 1)),
     );
@@ -38,22 +61,16 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
 
   @override
   Widget build(BuildContext context) {
+    final imageUrl =
+        widget.product.images.isNotEmpty
+            ? widget.product.images.first.url
+            : 'https://via.placeholder.com/150?text=No+Image';
     final rating =
         widget.product.reviews.isEmpty
             ? "0"
             : (widget.product.reviews.fold(0, (sum, r) => sum + r.rating) /
                     widget.product.reviews.length)
                 .toStringAsFixed(1);
-
-    final imageUrl =
-        widget.product.images.isNotEmpty
-            ? widget.product.images.first.url
-            : 'https://via.placeholder.com/150?text=No+Image';
-
-    final imageWidget =
-        imageUrl.startsWith('http')
-            ? Image.network(imageUrl, fit: BoxFit.cover)
-            : Image.asset(imageUrl, fit: BoxFit.cover);
 
     return CommonLayout(
       body: Padding(
@@ -62,7 +79,6 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // --- Custom AppBar Row ---
               Row(
                 children: [
                   IconButton(
@@ -80,7 +96,14 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
               Center(
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(12),
-                  child: SizedBox(height: 120, width: 120, child: imageWidget),
+                  child: SizedBox(
+                    height: 120,
+                    width: 120,
+                    child:
+                        imageUrl.startsWith('http')
+                            ? Image.network(imageUrl, fit: BoxFit.cover)
+                            : Image.asset(imageUrl, fit: BoxFit.cover),
+                  ),
                 ),
               ),
               const SizedBox(height: 16),
@@ -93,15 +116,16 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                 '₹${widget.product.price}',
                 style: const TextStyle(color: Colors.green, fontSize: 18),
               ),
-              const SizedBox(height: 4),
               Text(
                 'Rating: $rating ⭐ (${widget.product.reviews.length} reviews)',
               ),
-              const SizedBox(height: 4),
               Text('Stock: ${widget.product.stock} units'),
-              const SizedBox(height: 24),
+              Text(
+                'Commission: ${double.tryParse(widget.product.defaultCommissionPct.toString())?.toStringAsFixed(1) ?? "0"}%',
+                style: const TextStyle(color: Colors.purple),
+              ),
 
-              // --- Month/Year Dropdowns ---
+              const SizedBox(height: 24),
               Row(
                 children: [
                   DropdownButton<int>(
@@ -133,116 +157,114 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
 
-              // --- Growth Line Chart ---
+              const SizedBox(height: 20),
               const Text(
                 "Sales Growth",
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
-              const SizedBox(height: 15),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                child: SizedBox(
-                  height: 180,
-                  width: double.infinity,
-                  child: LineChart(
-                    LineChartData(
-                      gridData: FlGridData(show: false),
-                      borderData: FlBorderData(
-                        show: true,
-                        border: const Border(
-                          bottom: BorderSide(color: Colors.grey),
-                          left: BorderSide(color: Colors.grey),
-                          top: BorderSide(color: Colors.transparent),
-                          right: BorderSide(color: Colors.transparent),
+              const SizedBox(height: 16),
+
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  return SizedBox(
+                    height: 240,
+                    width: double.infinity,
+                    child: LineChart(
+                      LineChartData(
+                        gridData: FlGridData(show: false),
+                        borderData: FlBorderData(
+                          show: true,
+                          border: const Border(
+                            bottom: BorderSide(color: Colors.grey),
+                            left: BorderSide(color: Colors.grey),
+                            top: BorderSide.none,
+                            right: BorderSide.none,
+                          ),
                         ),
-                      ),
-                      titlesData: FlTitlesData(
-                        topTitles: AxisTitles(
-                          sideTitles: SideTitles(showTitles: false),
-                        ),
-                        rightTitles: AxisTitles(
-                          sideTitles: SideTitles(showTitles: false),
-                        ),
-                        leftTitles: AxisTitles(
-                          sideTitles: SideTitles(
-                            showTitles: true,
-                            reservedSize: 28,
-                            interval: 5,
-                            getTitlesWidget:
-                                (value, _) => Text(
+                        titlesData: FlTitlesData(
+                          leftTitles: AxisTitles(
+                            sideTitles: SideTitles(
+                              showTitles: true,
+                              reservedSize: 32,
+                              interval: 1,
+                              getTitlesWidget:
+                                  (value, _) => Text(
+                                    value.toInt().toString(),
+                                    style: const TextStyle(fontSize: 10),
+                                  ),
+                            ),
+                          ),
+                          bottomTitles: AxisTitles(
+                            sideTitles: SideTitles(
+                              showTitles: true,
+                              interval: (chartSpots.length / 6).ceilToDouble(),
+                              getTitlesWidget: (value, _) {
+                                final index = value.toInt();
+                                if (index < 0 || index >= dayLabels.length) {
+                                  return const SizedBox.shrink();
+                                }
+                                return Text(
                                   value.toInt().toString(),
                                   style: const TextStyle(fontSize: 10),
-                                ),
+                                );
+                              },
+                            ),
+                          ),
+                          rightTitles: AxisTitles(
+                            sideTitles: SideTitles(showTitles: false),
+                          ),
+                          topTitles: AxisTitles(
+                            sideTitles: SideTitles(showTitles: false),
                           ),
                         ),
-                        bottomTitles: AxisTitles(
-                          sideTitles: SideTitles(
-                            showTitles: true,
-                            interval: (dummySpots.length ~/ 6).toDouble(),
-                            getTitlesWidget: (value, _) {
-                              final index = value.toInt();
-                              if (index < 0 || index >= dayLabels.length) {
-                                return const SizedBox.shrink();
-                              }
-                              return Text(
-                                dayLabels[index],
-                                style: const TextStyle(fontSize: 10),
-                              );
+                        lineBarsData: [
+                          LineChartBarData(
+                            spots: chartSpots,
+                            isCurved: true,
+                            color: Colors.blue,
+                            barWidth: 3,
+                            dotData: FlDotData(show: false),
+                            belowBarData: BarAreaData(show: false),
+                          ),
+                        ],
+                        showingTooltipIndicators: List.generate(
+                          chartSpots.length,
+                          (i) => ShowingTooltipIndicators([
+                            LineBarSpot(
+                              LineChartBarData(spots: chartSpots),
+                              0,
+                              chartSpots[i],
+                            ),
+                          ]),
+                        ),
+                        lineTouchData: LineTouchData(
+                          enabled: true,
+                          touchTooltipData: LineTouchTooltipData(
+                            tooltipBgColor: Colors.black87,
+                            getTooltipItems: (touchedSpots) {
+                              return touchedSpots.map((spot) {
+                                final day = spot.x.toInt() + 1;
+                                final orders = dailyOrderCount[day] ?? 0;
+                                final revenue = dailyRevenue[day] ?? 0;
+                                return LineTooltipItem(
+                                  'Day $day\nOrders: $orders\n₹${revenue.toStringAsFixed(2)}',
+                                  const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 12,
+                                  ),
+                                );
+                              }).toList();
                             },
                           ),
                         ),
                       ),
-                      lineBarsData: [
-                        LineChartBarData(
-                          spots: dummySpots,
-                          isCurved: true,
-                          color: Colors.blue,
-                          barWidth: 3,
-                          isStrokeCapRound: true,
-                          belowBarData: BarAreaData(show: false),
-                          dotData: FlDotData(
-                            show: true,
-                            getDotPainter: (spot, _, __, ___) {
-                              return FlDotCirclePainter(
-                                radius: 3,
-                                color: Colors.pink,
-                                strokeWidth: 1,
-                                strokeColor: Colors.white,
-                              );
-                            },
-                          ),
-                        ),
-                      ],
                     ),
-                  ),
-                ),
+                  );
+                },
               ),
 
-              const SizedBox(height: 8),
-              Container(
-                margin: const EdgeInsets.only(top: 12),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 6,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.blue),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: const [
-                    Icon(Icons.show_chart, size: 16, color: Colors.blue),
-                    SizedBox(width: 4),
-                    Text("Sales Growth", style: TextStyle(color: Colors.blue)),
-                  ],
-                ),
-              ),
               const SizedBox(height: 24),
-
               const Text(
                 "Customer Reviews",
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
@@ -279,14 +301,11 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                         ],
                       ),
                       const SizedBox(height: 8),
-
                       if (review.comment.trim().isNotEmpty)
                         Text(
                           review.comment,
                           style: const TextStyle(fontSize: 14),
                         ),
-
-                      // --- Review Images Preview ---
                       if (review.images != null &&
                           review.images!.isNotEmpty) ...[
                         const SizedBox(height: 8),
@@ -298,19 +317,19 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                             separatorBuilder:
                                 (_, __) => const SizedBox(width: 8),
                             itemBuilder: (context, index) {
-                              final imageUrl = review.images![index];
+                              final img = review.images![index];
                               return ClipRRect(
                                 borderRadius: BorderRadius.circular(8),
                                 child: Image.network(
-                                  imageUrl as String,
+                                  img as String,
                                   height: 100,
                                   width: 100,
                                   fit: BoxFit.cover,
                                   errorBuilder:
                                       (_, __, ___) => Container(
-                                        color: Colors.grey[200],
                                         width: 100,
                                         height: 100,
+                                        color: Colors.grey[200],
                                         child: const Icon(Icons.broken_image),
                                       ),
                                 ),

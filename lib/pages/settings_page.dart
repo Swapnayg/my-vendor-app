@@ -1,5 +1,6 @@
 import 'dart:convert';
-import 'dart:io';
+import 'dart:typed_data';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:http/http.dart' as http;
@@ -23,7 +24,8 @@ class _SettingsPageState extends State<SettingsPage> {
   final _branchNameController = TextEditingController();
   final _upiIdController = TextEditingController();
 
-  File? _upiQrFile;
+  Uint8List? _upiQrBytes;
+  String? _upiQrFileName;
   String? _upiQrUrl;
 
   bool _isLoading = true;
@@ -61,6 +63,7 @@ class _SettingsPageState extends State<SettingsPage> {
         _branchNameController.text = account['branchName'] ?? '';
         _upiIdController.text = account['upiId'] ?? '';
         _upiQrUrl = account['upiQrUrl'];
+        _upiQrFileName = _upiQrUrl?.split('/').last;
       }
     }
 
@@ -69,14 +72,18 @@ class _SettingsPageState extends State<SettingsPage> {
 
   Future<void> _pickUpiQrFile() async {
     final result = await FilePicker.platform.pickFiles(type: FileType.image);
-    if (result != null && result.files.single.path != null) {
+    if (result != null && result.files.single.bytes != null) {
       setState(() {
-        _upiQrFile = File(result.files.single.path!);
+        _upiQrBytes = result.files.single.bytes;
+        _upiQrFileName = result.files.single.name;
       });
     }
   }
 
-  Future<String?> _uploadImageToCloudinary(File file) async {
+  Future<String?> _uploadImageToCloudinary(
+    Uint8List fileBytes,
+    String fileName,
+  ) async {
     const cloudName = 'dhas7vy3k';
     const uploadPreset = 'vendors';
 
@@ -86,7 +93,9 @@ class _SettingsPageState extends State<SettingsPage> {
     final request =
         http.MultipartRequest('POST', uri)
           ..fields['upload_preset'] = uploadPreset
-          ..files.add(await http.MultipartFile.fromPath('file', file.path));
+          ..files.add(
+            http.MultipartFile.fromBytes('file', fileBytes, filename: fileName),
+          );
 
     final response = await request.send();
     final resStr = await response.stream.bytesToString();
@@ -109,10 +118,13 @@ class _SettingsPageState extends State<SettingsPage> {
     final token = prefs.getString('token');
     if (token == null) return;
 
-    // Upload QR image to Cloudinary
+    // Upload QR image if new file is picked
     String? uploadedUrl = _upiQrUrl;
-    if (_upiQrFile != null) {
-      uploadedUrl = await _uploadImageToCloudinary(_upiQrFile!);
+    if (_upiQrBytes != null && _upiQrFileName != null) {
+      uploadedUrl = await _uploadImageToCloudinary(
+        _upiQrBytes!,
+        _upiQrFileName!,
+      );
       if (uploadedUrl == null) {
         setState(() => _isSubmitting = false);
         ScaffoldMessenger.of(context).showSnackBar(
@@ -146,6 +158,7 @@ class _SettingsPageState extends State<SettingsPage> {
       headers: headers,
       body: jsonEncode(body),
     );
+
     setState(() => _isSubmitting = false);
 
     if (response.statusCode == 200) {
@@ -226,7 +239,7 @@ class _SettingsPageState extends State<SettingsPage> {
                       const SizedBox(height: 16),
                       _buildFilePickerTile(
                         'Upload UPI QR Code',
-                        _upiQrFile,
+                        _upiQrFileName,
                         _pickUpiQrFile,
                       ),
                       const SizedBox(height: 24),
@@ -295,7 +308,11 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
-  Widget _buildFilePickerTile(String title, File? file, VoidCallback onPick) {
+  Widget _buildFilePickerTile(
+    String title,
+    String? fileName,
+    VoidCallback onPick,
+  ) {
     return ListTile(
       onTap: onPick,
       shape: RoundedRectangleBorder(
@@ -304,7 +321,8 @@ class _SettingsPageState extends State<SettingsPage> {
       ),
       title: Text(title),
       subtitle: Text(
-        file != null ? file.path.split('/').last : 'No file selected.',
+        fileName ?? 'No file selected.',
+        style: const TextStyle(fontSize: 13),
       ),
       trailing: const Icon(Icons.arrow_forward_ios, size: 16),
     );

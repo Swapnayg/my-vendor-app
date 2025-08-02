@@ -14,19 +14,7 @@ class ReportsPage extends StatefulWidget {
 }
 
 class _ReportsPageState extends State<ReportsPage> {
-  String selectedMonth = 'July';
-  int selectedYear = 2025;
-  bool isLoading = true;
-
-  String totalSales = '₹0';
-  int ordersThisMonth = 0;
-  int newCustomers = 0;
-  String topProduct = 'N/A';
-  List<dynamic> monthlySalesTrends = [];
-  List<dynamic> recentOrders = [];
-  List<dynamic> partners = [];
-
-  final List<String> months = [
+  List<String> months = [
     'January',
     'February',
     'March',
@@ -41,11 +29,49 @@ class _ReportsPageState extends State<ReportsPage> {
     'December',
   ];
 
+  late String selectedMonth;
+
+  double getMaxY() {
+    double max = 0;
+    for (var item in monthlySalesTrends) {
+      final blue = (item['blue'] ?? 0).toDouble();
+      final pink = (item['pink'] ?? 0).toDouble();
+      max = [max, blue, pink].reduce((a, b) => a > b ? a : b);
+    }
+    return (max / 1000).ceil() * 1000 + 1000; // round up and add buffer
+  }
+
+  int selectedYear = 2025;
+  bool isLoading = true;
+
+  String totalSales = '₹0';
+  int ordersThisMonth = 0;
+  int newCustomers = 0;
+  String topProduct = 'N/A';
+  List<dynamic> monthlySalesTrends = [];
+  List<dynamic> recentOrders = [];
+  List<dynamic> partners = [];
+
   final List<int> years = [2024, 2025];
 
   @override
   void initState() {
     super.initState();
+    selectedMonth =
+        [
+          'January',
+          'February',
+          'March',
+          'April',
+          'May',
+          'June',
+          'July',
+          'August',
+          'September',
+          'October',
+          'November',
+          'December',
+        ][DateTime.now().month - 1];
     fetchReports();
   }
 
@@ -68,6 +94,8 @@ class _ReportsPageState extends State<ReportsPage> {
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
       final report = data['data'];
+      print("report");
+      print(report);
 
       setState(() {
         totalSales = report['totalSales'];
@@ -87,20 +115,34 @@ class _ReportsPageState extends State<ReportsPage> {
   List<BarChartGroupData> getBarGroups() {
     return List.generate(monthlySalesTrends.length, (index) {
       final item = monthlySalesTrends[index];
+
       return BarChartGroupData(
         x: index,
+        barsSpace: 12, // 👈 wider spacing between bars
         barRods: [
           BarChartRodData(
             toY: (item['blue'] ?? 0).toDouble(),
+            width: 8,
             color: Colors.blue,
-            width: 10,
+            borderRadius: BorderRadius.circular(4),
+            rodStackItems: [],
           ),
           BarChartRodData(
             toY: (item['pink'] ?? 0).toDouble(),
+            width: 8,
             color: Colors.pink,
-            width: 10,
+            borderRadius: BorderRadius.circular(4),
+            rodStackItems: [],
+          ),
+          BarChartRodData(
+            toY: (item['green'] ?? 0).toDouble(),
+            width: 8,
+            color: Colors.green,
+            borderRadius: BorderRadius.circular(4),
+            rodStackItems: [],
           ),
         ],
+        showingTooltipIndicators: [0, 1, 2],
       );
     });
   }
@@ -220,27 +262,65 @@ class _ReportsPageState extends State<ReportsPage> {
                       aspectRatio: 1.7,
                       child: BarChart(
                         BarChartData(
+                          barGroups: getBarGroups(),
                           gridData: FlGridData(show: false),
                           borderData: FlBorderData(show: false),
                           titlesData: FlTitlesData(
                             leftTitles: AxisTitles(
+                              sideTitles: SideTitles(
+                                showTitles: true,
+                                reservedSize: 40,
+                              ),
+                            ),
+                            rightTitles: AxisTitles(
+                              sideTitles: SideTitles(showTitles: false),
+                            ),
+                            topTitles: AxisTitles(
                               sideTitles: SideTitles(showTitles: false),
                             ),
                             bottomTitles: AxisTitles(
                               sideTitles: SideTitles(
                                 showTitles: true,
-                                getTitlesWidget:
-                                    (value, _) => Text('W${value.toInt() + 1}'),
+                                getTitlesWidget: (
+                                  double value,
+                                  TitleMeta meta,
+                                ) {
+                                  return Padding(
+                                    padding: const EdgeInsets.only(top: 4),
+                                    child: Text(
+                                      'Week ${value.toInt() + 1}',
+                                      style: const TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  );
+                                },
+                                interval: 1,
+                                reservedSize: 32,
                               ),
                             ),
-                            topTitles: AxisTitles(
-                              sideTitles: SideTitles(showTitles: false),
-                            ),
-                            rightTitles: AxisTitles(
-                              sideTitles: SideTitles(showTitles: false),
+                          ),
+
+                          barTouchData: BarTouchData(
+                            enabled: true,
+                            touchTooltipData: BarTouchTooltipData(
+                              tooltipBgColor: Colors.black87,
+                              getTooltipItem: (
+                                group,
+                                groupIndex,
+                                rod,
+                                rodIndex,
+                              ) {
+                                final isBlue = rod.color == Colors.blue;
+                                return BarTooltipItem(
+                                  '${isBlue ? "Blue" : "Pink"}\n₹${rod.toY.toStringAsFixed(0)}',
+                                  TextStyle(color: Colors.white),
+                                );
+                              },
                             ),
                           ),
-                          barGroups: getBarGroups(),
+                          maxY: getMaxY(),
                         ),
                       ),
                     ),
@@ -271,7 +351,7 @@ class _ReportsPageState extends State<ReportsPage> {
                     ...recentOrders.map(
                       (o) => _orderTile(
                         o['customer'] ?? 'Unknown',
-                        o['id'],
+                        o['id'].toString(),
                         o['status'],
                         o['amount'],
                         timeAgo(DateTime.parse(o['createdAt'])),

@@ -11,6 +11,11 @@ class ViewProductPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    String _capitalize(String input) {
+      if (input.isEmpty) return input;
+      return input[0].toUpperCase() + input.substring(1);
+    }
+
     return CommonLayout(
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -99,6 +104,11 @@ class ViewProductPage extends StatelessWidget {
                   "${product.taxRate.toStringAsFixed(2)}%",
                   Colors.orange,
                 ),
+                _infoBox(
+                  "Commission",
+                  "${product.defaultCommissionPct?.toStringAsFixed(1) ?? "0"}%",
+                  Colors.purple,
+                ),
               ],
             ),
 
@@ -141,19 +151,7 @@ class ViewProductPage extends StatelessWidget {
                 Text("Type: ${compliance.type}"),
                 const SizedBox(height: 6),
 
-                if (compliance.fileUrl != null)
-                  GestureDetector(
-                    onTap: () => _launchURL(compliance.fileUrl!),
-                    child: Text(
-                      compliance.fileUrl!,
-                      style: const TextStyle(
-                        color: Colors.blue,
-                        decoration: TextDecoration.underline,
-                      ),
-                    ),
-                  ),
-
-                const SizedBox(height: 10),
+                if (compliance.fileUrl != null) const SizedBox(height: 10),
 
                 if (compliance.fileUrl != null)
                   _buildDocumentPreview(compliance.fileUrl!),
@@ -197,16 +195,20 @@ class ViewProductPage extends StatelessWidget {
                           const Icon(Icons.person, size: 20),
                           const SizedBox(width: 6),
                           Text(
-                            review.user!.username,
+                            _capitalize(
+                              review.user?.username ?? "Unknown User",
+                            ),
                             style: const TextStyle(fontWeight: FontWeight.bold),
                           ),
+
                           const SizedBox(width: 10),
                           Icon(Icons.star, color: Colors.amber, size: 18),
                           Text(review.rating.toString()),
                         ],
                       ),
                       const SizedBox(height: 4),
-                      Text(review.comment),
+                      Text(review.comment ?? ""),
+
                       const SizedBox(height: 8),
                       if (review.images != null && review.images!.isNotEmpty)
                         SizedBox(

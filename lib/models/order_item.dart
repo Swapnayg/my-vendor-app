@@ -11,6 +11,7 @@ class OrderItem {
   final double price;
   final double? commissionPct;
   final double? commissionAmt;
+  final DateTime createdAt; // ✅ newly added
   final Product? product; // Included product details
 
   OrderItem({
@@ -22,6 +23,7 @@ class OrderItem {
     required this.taxRate,
     required this.taxAmount,
     required this.price,
+    required this.createdAt, // ✅ constructor update
     this.commissionPct,
     this.commissionAmt,
     this.product,
@@ -45,6 +47,7 @@ class OrderItem {
           json['commissionAmt'] != null
               ? (json['commissionAmt'] as num).toDouble()
               : null,
+      createdAt: DateTime.parse(json['createdAt']), // ✅ parse added
       product:
           json['product'] != null ? Product.fromJson(json['product']) : null,
     );
@@ -62,6 +65,7 @@ class OrderItem {
       'price': price,
       'commissionPct': commissionPct,
       'commissionAmt': commissionAmt,
+      'createdAt': createdAt.toIso8601String(), // ✅ serialize
       'product': product?.toJson(),
     };
   }

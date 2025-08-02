@@ -25,6 +25,7 @@ class _AddProductPageState extends State<AddProductPage> {
   bool _isSaving = false;
   late String _name;
   late String _description;
+  late double _defaultCommissionPct;
   late double _price;
   late double _basePrice;
   late double _taxRate;
@@ -51,6 +52,7 @@ class _AddProductPageState extends State<AddProductPage> {
     _description = data?.description ?? '';
     _basePrice = data?.basePrice ?? 0;
     _taxRate = data?.taxRate ?? 0;
+    _defaultCommissionPct = widget.initialData?.defaultCommissionPct ?? 0;
     _price = _calculatePrice();
     _priceController = TextEditingController(text: _price.toStringAsFixed(2));
     _stock = data?.stock ?? 0;
@@ -264,6 +266,7 @@ class _AddProductPageState extends State<AddProductPage> {
         'stock': _stock,
         'categoryId': _categoryId,
         'imageUrls': _imageUrls,
+        'defaultCommissionPct': _defaultCommissionPct,
         'compliance':
             _complianceList
                 .where(
@@ -342,6 +345,7 @@ class _AddProductPageState extends State<AddProductPage> {
 
               TextFormField(
                 initialValue: _name,
+                enabled: !isEditMode, // Disable in edit mode
                 decoration: const InputDecoration(labelText: 'Product Name'),
                 onChanged: (val) => _name = val,
                 validator:
@@ -392,11 +396,13 @@ class _AddProductPageState extends State<AddProductPage> {
                   _basePrice = double.tryParse(val) ?? 0;
                   _updatePrice();
                 },
-                validator:
-                    (val) =>
-                        (double.tryParse(val ?? '') ?? 0) <= 0
-                            ? 'Enter valid base price'
-                            : null,
+                validator: (val) {
+                  final parsed = double.tryParse(val ?? '');
+                  if (parsed == null || parsed <= 0) {
+                    return 'Base price must be greater than zero';
+                  }
+                  return null;
+                },
               ),
               const SizedBox(height: 10),
 
@@ -408,11 +414,13 @@ class _AddProductPageState extends State<AddProductPage> {
                   _taxRate = double.tryParse(val) ?? 0;
                   _updatePrice();
                 },
-                validator:
-                    (val) =>
-                        (double.tryParse(val ?? '') ?? -1) < 0
-                            ? 'Enter valid tax rate'
-                            : null,
+                validator: (val) {
+                  final parsed = double.tryParse(val ?? '');
+                  if (parsed == null || parsed <= 0) {
+                    return 'Tax rate must be greater than zero';
+                  }
+                  return null;
+                },
               ),
               const SizedBox(height: 10),
 
@@ -425,14 +433,36 @@ class _AddProductPageState extends State<AddProductPage> {
 
               TextFormField(
                 initialValue: _stock.toString(),
+                enabled: !isEditMode, // Disable in edit mode
                 keyboardType: TextInputType.number,
                 decoration: const InputDecoration(labelText: 'Stock'),
                 onChanged: (val) => _stock = int.tryParse(val) ?? 0,
-                validator:
-                    (val) =>
-                        (int.tryParse(val ?? '') ?? -1) < 0
-                            ? 'Enter valid stock'
-                            : null,
+                validator: (val) {
+                  final parsed = int.tryParse(val ?? '');
+                  if (parsed == null || parsed <= 0) {
+                    return 'Stock must be greater than zero';
+                  }
+                  return null;
+                },
+              ),
+
+              const SizedBox(height: 10),
+
+              TextFormField(
+                initialValue: _defaultCommissionPct.toString(),
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  labelText: 'Default Commission (%)',
+                ),
+                onChanged:
+                    (val) => _defaultCommissionPct = double.tryParse(val) ?? 0,
+                validator: (val) {
+                  final parsed = double.tryParse(val ?? '');
+                  if (parsed == null || parsed <= 0 || parsed > 100) {
+                    return 'Commission must be between 1 and 100';
+                  }
+                  return null;
+                },
               ),
 
               const SizedBox(height: 20),
