@@ -36,6 +36,7 @@ class _MessagesPageState extends State<MessagesPage> {
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
+
         final List<dynamic> list = data['customers'];
 
         setState(() {
@@ -55,10 +56,10 @@ class _MessagesPageState extends State<MessagesPage> {
   Widget build(BuildContext context) {
     final filtered =
         customers.where((user) {
-          return user.username.toLowerCase().contains(
+          return user.username!.toLowerCase().contains(
                 searchText.toLowerCase(),
               ) ||
-              user.email.toLowerCase().contains(searchText.toLowerCase());
+              user.email!.toLowerCase().contains(searchText.toLowerCase());
         }).toList();
 
     return CommonLayout(
@@ -101,83 +102,88 @@ class _MessagesPageState extends State<MessagesPage> {
             const Expanded(child: Center(child: CircularProgressIndicator()))
           else
             Expanded(
-              child: ListView.builder(
-                itemCount: filtered.length,
-                itemBuilder: (_, index) {
-                  final user = filtered[index];
-
-                  return ListTile(
-                    leading: Stack(
-                      children: [
-                        CircleAvatar(
-                          radius: 24,
-                          backgroundColor: _colorForIndex(index),
-                          child: Text(
-                            user.username[0].toUpperCase(),
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 18,
-                            ),
-                          ),
-                        ),
-                        if (user.isActive)
-                          Positioned(
-                            bottom: 0,
-                            right: 0,
-                            child: Container(
-                              width: 10,
-                              height: 10,
-                              decoration: BoxDecoration(
-                                color: Colors.green,
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: Colors.white,
-                                  width: 1.5,
+              child:
+                  filtered.isEmpty
+                      ? const Center(child: Text("No customers found"))
+                      : ListView.builder(
+                        itemCount: filtered.length,
+                        itemBuilder: (_, index) {
+                          final user = filtered[index];
+                          return ListTile(
+                            leading: Stack(
+                              children: [
+                                CircleAvatar(
+                                  radius: 24,
+                                  backgroundColor: _colorForIndex(index),
+                                  child: Text(
+                                    user.username!.isNotEmpty
+                                        ? user.username![0].toUpperCase()
+                                        : "?",
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 18,
+                                    ),
+                                  ),
                                 ),
+                                if (user.isActive)
+                                  Positioned(
+                                    bottom: 0,
+                                    right: 0,
+                                    child: Container(
+                                      width: 10,
+                                      height: 10,
+                                      decoration: BoxDecoration(
+                                        color: Colors.green,
+                                        shape: BoxShape.circle,
+                                        border: Border.all(
+                                          color: Colors.white,
+                                          width: 1.5,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                            title: Text(
+                              user.username!,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
                               ),
                             ),
-                          ),
-                      ],
-                    ),
-                    title: Text(
-                      user.username,
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    subtitle: Text(user.email),
-                    trailing:
-                        user.unreadCount > 0
-                            ? Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 4,
-                              ),
-                              decoration: BoxDecoration(
-                                color: Colors.red,
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Text(
-                                '${user.unreadCount}',
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            )
-                            : null,
-                    onTap: () {
-                      context.push(
-                        '/chat',
-                        extra: {
-                          'user': user,
-                          'customerId':
-                              user.customer['id'], // if user.customer is a Map
+                            subtitle: Text(user.email!),
+                            trailing:
+                                user.unreadCount > 0
+                                    ? Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                        vertical: 4,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: Colors.red,
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: Text(
+                                        '${user.unreadCount}',
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    )
+                                    : null,
+                            onTap: () {
+                              context.push(
+                                '/chat',
+                                extra: {
+                                  'user': user,
+                                  'customerId': user.customer['id'],
+                                },
+                              );
+                            },
+                          );
                         },
-                      );
-                    },
-                  );
-                },
-              ),
+                      ),
             ),
         ],
       ),

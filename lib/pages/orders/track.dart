@@ -1,10 +1,8 @@
 import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '/common/common_layout.dart';
-import '/services/api_service.dart';
 import 'package:http/http.dart' as http;
 
 class OrderTrackPage extends StatefulWidget {
@@ -19,6 +17,13 @@ class OrderTrackPage extends StatefulWidget {
 class _OrderTrackPageState extends State<OrderTrackPage> {
   Map<String, dynamic>? order;
   bool isLoading = true;
+  String orderStatus = '';
+
+  // New loading flags for each button
+  bool isApproving = false;
+  bool isRejecting = false;
+  bool isMarkingShipped = false;
+  bool isStartingShipping = false;
 
   @override
   void initState() {
@@ -27,35 +32,77 @@ class _OrderTrackPageState extends State<OrderTrackPage> {
   }
 
   Future<void> approveOrder() async {
+    if (isApproving) return;
+    setState(() {
+      isApproving = true;
+    });
+
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('token');
-    if (token == null) return;
+    if (token == null) {
+      setState(() => isApproving = false);
+      return;
+    }
+
+    final idMatch = RegExp(r'\d+').firstMatch(widget.orderId);
+    final idOnly = idMatch != null ? int.tryParse(idMatch.group(0)!) : null;
+
+    if (idOnly == null) {
+      setState(() {
+        isApproving = false;
+        isLoading = false;
+      });
+      return;
+    }
 
     final response = await http.post(
-      Uri.parse('http://localhost:3000/api/MobileApp/vendor/approve-order'),
+      Uri.parse('http://localhost:3000/api/MobileApp/vendor/app-approve-order'),
       headers: {
         'Authorization': 'Bearer $token',
         'Content-Type': 'application/json',
       },
-      body: jsonEncode({'orderId': widget.orderId}),
+      body: jsonEncode({'orderId': idOnly}),
     );
 
     if (response.statusCode == 200) {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text('Order Approved!')));
-      fetchOrder(); // Refresh state
+      await fetchOrder();
     } else {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text('Failed to approve order')));
     }
+
+    setState(() {
+      isApproving = false;
+    });
   }
 
   Future<void> rejectOrder() async {
+    if (isRejecting) return;
+    setState(() {
+      isRejecting = true;
+    });
+
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('token');
-    if (token == null) return;
+    if (token == null) {
+      setState(() => isRejecting = false);
+      return;
+    }
+
+    final idMatch = RegExp(r'\d+').firstMatch(widget.orderId);
+    final idOnly = idMatch != null ? int.tryParse(idMatch.group(0)!) : null;
+
+    if (idOnly == null) {
+      setState(() {
+        isRejecting = false;
+        isLoading = false;
+      });
+      return;
+    }
 
     final response = await http.post(
       Uri.parse('http://localhost:3000/api/MobileApp/vendor/reject-order'),
@@ -63,40 +110,89 @@ class _OrderTrackPageState extends State<OrderTrackPage> {
         'Authorization': 'Bearer $token',
         'Content-Type': 'application/json',
       },
-      body: jsonEncode({'orderId': widget.orderId}),
+      body: jsonEncode({'orderId': idOnly}),
     );
 
     if (response.statusCode == 200) {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text('Order Rejected!')));
-      fetchOrder(); // Refresh state
+      await fetchOrder();
     } else {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text('Failed to reject order')));
     }
+
+    setState(() {
+      isRejecting = false;
+    });
   }
 
   Future<void> fetchOrder() async {
+    setState(() {
+      isLoading = true;
+    });
+
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('token');
 
-    if (token != null) {
-      final api = ApiService(token: token);
-      final res = await api.post('vendor/track', {'id': widget.orderId});
+    if (token == null) {
+      setState(() {
+        isLoading = false;
+      });
+      return;
+    }
 
-      if (res != null && res['data'] != null) {
-        setState(() {
-          order = res['data'];
-          isLoading = false;
-        });
-      } else {
-        setState(() => isLoading = false);
-      }
+    final idMatch = RegExp(r'\d+').firstMatch(widget.orderId);
+    final idOnly = idMatch != null ? int.tryParse(idMatch.group(0)!) : null;
+
+    if (idOnly == null) {
+      setState(() {
+        isLoading = false;
+      });
+      return;
+    }
+
+    final response = await http.post(
+      Uri.parse('http://localhost:3000/api/MobileApp/vendor/track'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+      body: jsonEncode({'id': idOnly}),
+    );
+
+    if (response.statusCode == 200) {
+      final jsonResponse = jsonDecode(response.body);
+      final fetchedOrder = jsonResponse['data'];
+      setState(() {
+        order = fetchedOrder;
+        orderStatus = (fetchedOrder?['status'] ?? '').toString().toUpperCase();
+        isLoading = false;
+      });
     } else {
       setState(() => isLoading = false);
     }
+  }
+
+  Future<void> markAsShipped() async {
+    if (isMarkingShipped) return;
+    setState(() {
+      isMarkingShipped = true;
+    });
+    // navigate; if there were async logic, await it here
+    context.go('/orders/mark-shipped');
+    // no reset needed if navigation leaves page
+  }
+
+  Future<void> startShipping() async {
+    if (isStartingShipping) return;
+    setState(() {
+      isStartingShipping = true;
+    });
+    context.go('/orders/tracking-details');
+    // no reset needed if navigation leaves page
   }
 
   @override
@@ -118,7 +214,8 @@ class _OrderTrackPageState extends State<OrderTrackPage> {
                           children: [
                             IconButton(
                               icon: const Icon(Icons.arrow_back),
-                              onPressed: () => context.pop(),
+                              onPressed:
+                                  () => context.go('/orders/latest-orders'),
                             ),
                             const SizedBox(width: 4),
                             const Text(
@@ -132,10 +229,7 @@ class _OrderTrackPageState extends State<OrderTrackPage> {
                         ),
                         ElevatedButton.icon(
                           icon: const Icon(Icons.picture_as_pdf, size: 18),
-                          label: const Text(
-                            "Invoice",
-                            style: TextStyle(fontSize: 14),
-                          ),
+                          label: const Text("Invoice"),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.pink,
                             foregroundColor: Colors.white,
@@ -193,7 +287,7 @@ class _OrderTrackPageState extends State<OrderTrackPage> {
                               Row(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Icon(
+                                  const Icon(
                                     Icons.place,
                                     size: 18,
                                     color: Colors.deepOrange,
@@ -234,14 +328,14 @@ class _OrderTrackPageState extends State<OrderTrackPage> {
                               ),
                               const SizedBox(height: 12),
                               Row(
-                                children: [
+                                children: const [
                                   Icon(
                                     Icons.timer,
                                     size: 18,
                                     color: Colors.deepOrange,
                                   ),
-                                  const SizedBox(width: 8),
-                                  const Text(
+                                  SizedBox(width: 8),
+                                  Text(
                                     "Estimated delivery in 25 mins",
                                     style: TextStyle(fontSize: 13),
                                   ),
@@ -364,61 +458,111 @@ class _OrderTrackPageState extends State<OrderTrackPage> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                           children: [
-                            OutlinedButton(
-                              onPressed: rejectOrder,
-                              style: OutlinedButton.styleFrom(
-                                foregroundColor: Colors.white,
-                                backgroundColor: Colors.orange,
-                                side: BorderSide.none,
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 18,
-                                  vertical: 12,
+                            if (orderStatus == 'PENDING') ...[
+                              // Reject Button
+                              OutlinedButton(
+                                onPressed: isRejecting ? null : rejectOrder,
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: Colors.white,
+                                  backgroundColor: Colors.orange,
+                                  side: BorderSide.none,
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 18,
+                                    vertical: 12,
+                                  ),
                                 ),
+                                child:
+                                    isRejecting
+                                        ? const SizedBox(
+                                          width: 16,
+                                          height: 16,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2.0,
+                                            valueColor: AlwaysStoppedAnimation(
+                                              Colors.white,
+                                            ),
+                                          ),
+                                        )
+                                        : const Text("Reject"),
                               ),
-                              child: const Text("Reject"),
-                            ),
-                            ElevatedButton(
-                              onPressed: approveOrder,
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.green,
-                                foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 18,
-                                  vertical: 12,
+                              // Accept Order Button
+                              ElevatedButton(
+                                onPressed: isApproving ? null : approveOrder,
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.green,
+                                  foregroundColor: Colors.white,
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 18,
+                                    vertical: 12,
+                                  ),
                                 ),
+                                child:
+                                    isApproving
+                                        ? const SizedBox(
+                                          width: 16,
+                                          height: 16,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2.0,
+                                            valueColor: AlwaysStoppedAnimation(
+                                              Colors.white,
+                                            ),
+                                          ),
+                                        )
+                                        : const Text("Accept Order"),
                               ),
-                              child: const Text("Accept Order"),
-                            ),
-
-                            ElevatedButton(
-                              onPressed: () {
-                                context.go('/orders/mark-shipped');
-                              },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.deepPurple,
-                                foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 18,
-                                  vertical: 12,
+                            ],
+                            if (orderStatus == 'ACCEPTED') ...[
+                              ElevatedButton(
+                                onPressed:
+                                    isMarkingShipped ? null : markAsShipped,
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.deepPurple,
+                                  foregroundColor: Colors.white,
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 18,
+                                    vertical: 12,
+                                  ),
                                 ),
+                                child:
+                                    isMarkingShipped
+                                        ? const SizedBox(
+                                          width: 16,
+                                          height: 16,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2.0,
+                                            valueColor: AlwaysStoppedAnimation(
+                                              Colors.white,
+                                            ),
+                                          ),
+                                        )
+                                        : const Text("Mark as Shipped"),
                               ),
-                              child: const Text("Mark as Shipped"),
-                            ),
-                            OutlinedButton(
-                              onPressed: () {
-                                context.go('/orders/tracking-details');
-                              },
-                              style: OutlinedButton.styleFrom(
-                                foregroundColor: Colors.white,
-                                backgroundColor: Colors.orange,
-                                side: BorderSide.none,
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 18,
-                                  vertical: 12,
+                              OutlinedButton(
+                                onPressed:
+                                    isStartingShipping ? null : startShipping,
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: Colors.white,
+                                  backgroundColor: Colors.orange,
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 18,
+                                    vertical: 12,
+                                  ),
                                 ),
+                                child:
+                                    isStartingShipping
+                                        ? const SizedBox(
+                                          width: 16,
+                                          height: 16,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2.0,
+                                            valueColor: AlwaysStoppedAnimation(
+                                              Colors.white,
+                                            ),
+                                          ),
+                                        )
+                                        : const Text("Start Shipping"),
                               ),
-                              child: const Text("Start Shipping"),
-                            ),
+                            ],
                           ],
                         ),
                       ],

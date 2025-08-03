@@ -11,7 +11,7 @@ class ViewProductPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    String _capitalize(String input) {
+    String capitalize(String input) {
       if (input.isEmpty) return input;
       return input[0].toUpperCase() + input.substring(1);
     }
@@ -195,9 +195,7 @@ class ViewProductPage extends StatelessWidget {
                           const Icon(Icons.person, size: 20),
                           const SizedBox(width: 6),
                           Text(
-                            _capitalize(
-                              review.user?.username ?? "Unknown User",
-                            ),
+                            capitalize(review.user?.username ?? "Unknown User"),
                             style: const TextStyle(fontWeight: FontWeight.bold),
                           ),
 

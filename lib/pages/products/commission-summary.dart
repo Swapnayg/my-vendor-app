@@ -171,8 +171,9 @@ class _CommissionSummaryPageState extends State<CommissionSummaryPage> {
                     showTitles: true,
                     getTitlesWidget: (value, meta) {
                       final index = value.toInt();
-                      if (index < 0 || index >= trends.length)
+                      if (index < 0 || index >= trends.length) {
                         return const SizedBox();
+                      }
                       return Text(
                         trends[index]['name'],
                         style: const TextStyle(fontSize: 10),

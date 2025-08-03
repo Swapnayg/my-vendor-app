@@ -170,11 +170,14 @@ class InvoicePage extends StatelessWidget {
 
                 ...items.map<Widget>((item) {
                   return ListTile(
-                    leading: Image.asset(
+                    leading: Image.network(
                       item['image'],
                       width: 40,
                       height: 40,
                       fit: BoxFit.cover,
+                      errorBuilder:
+                          (context, error, stackTrace) =>
+                              const Icon(Icons.broken_image),
                     ),
                     title: Text(item['name']),
                     subtitle: Text('${item['quantity']} x ₹${item['price']}'),

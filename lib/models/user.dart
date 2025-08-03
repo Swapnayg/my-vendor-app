@@ -5,16 +5,16 @@ enum UserRole { CUSTOMER, VENDOR, ADMIN }
 
 class User {
   final int id;
-  final String email;
-  final String username;
-  final String password;
+  final String? email;
+  final String? username;
+  final String? password;
   final String? avatarUrl;
   final String? tempPassword;
   final UserRole role;
   final bool isActive;
   final DateTime createdAt;
   final DateTime updatedAt;
-  final int unreadCount; // ✅ NEW FIELD
+  final int unreadCount;
 
   // Relations
   final List<Review>? reviews;
@@ -33,10 +33,10 @@ class User {
 
   User({
     required this.id,
+    this.email,
+    this.username,
+    this.password,
     this.avatarUrl,
-    required this.email,
-    required this.username,
-    required this.password,
     this.tempPassword,
     this.role = UserRole.CUSTOMER,
     this.isActive = true,
@@ -44,7 +44,7 @@ class User {
     required this.updatedAt,
     this.reviews,
     this.notifications,
-    required this.unreadCount, // ✅ INIT
+    required this.unreadCount,
     this.vendor,
     this.customer,
     this.admin,
@@ -59,19 +59,24 @@ class User {
 
   factory User.fromJson(Map<String, dynamic> json) {
     return User(
-      id: json['id'],
-      email: json['email'],
-      username: json['username'],
-      password: json['password'],
-      tempPassword: json['tempPassword'],
+      id: json['id'] ?? 0,
+      email: json['email']?.toString(),
+      username: json['username']?.toString(),
+      password: json['password']?.toString(),
+      avatarUrl: json['avatarUrl']?.toString(),
+      tempPassword: json['tempPassword']?.toString(),
       role: UserRole.values.firstWhere(
-        (e) => e.name == json['role'],
+        (e) => e.name == (json['role'] ?? 'CUSTOMER'),
         orElse: () => UserRole.CUSTOMER,
       ),
       isActive: json['isActive'] ?? true,
-      createdAt: DateTime.parse(json['createdAt']),
-      updatedAt: DateTime.parse(json['updatedAt']),
-      unreadCount: json['unreadCount'] ?? 0, // ✅ ADD HERE
+      createdAt:
+          DateTime.tryParse(json['createdAt']?.toString() ?? '') ??
+          DateTime.now(),
+      updatedAt:
+          DateTime.tryParse(json['updatedAt']?.toString() ?? '') ??
+          DateTime.now(),
+      unreadCount: json['unreadCount'] ?? 0,
       reviews:
           json['reviews'] != null
               ? List<Review>.from(
@@ -103,11 +108,12 @@ class User {
     'username': username,
     'password': password,
     'tempPassword': tempPassword,
+    'avatarUrl': avatarUrl,
     'role': role.name,
     'isActive': isActive,
     'createdAt': createdAt.toIso8601String(),
     'updatedAt': updatedAt.toIso8601String(),
-    'unreadCount': unreadCount, // ✅ ADD TO MAP
+    'unreadCount': unreadCount,
     'reviews': reviews?.map((x) => x.toJson()).toList(),
     'notification': notifications?.map((x) => x.toJson()).toList(),
     'vendor': vendor,

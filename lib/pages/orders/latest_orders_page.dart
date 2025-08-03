@@ -111,11 +111,21 @@ class _LatestOrdersPageState extends State<LatestOrdersPage> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  order['customerName'] ?? 'Unknown Customer',
+                                  (order['customerName'] ?? 'Unknown Customer')
+                                      .toString()
+                                      .split(' ')
+                                      .map(
+                                        (word) =>
+                                            word.isNotEmpty
+                                                ? '${word[0].toUpperCase()}${word.substring(1)}'
+                                                : '',
+                                      )
+                                      .join(' '),
                                   style: const TextStyle(
                                     fontWeight: FontWeight.w500,
                                   ),
                                 ),
+
                                 Text(
                                   order['orderDate'] ?? '',
                                   style: const TextStyle(fontSize: 12),

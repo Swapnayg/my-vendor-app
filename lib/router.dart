@@ -172,8 +172,7 @@ final GoRouter router = GoRouter(
     GoRoute(
       path: '/orders/view',
       builder: (context, state) {
-        final order =
-            state.extra as Order; // Make sure to import your Order model
+        final order = state.extra as Map<String, dynamic>;
         return OrderViewPage(order: order);
       },
     ),

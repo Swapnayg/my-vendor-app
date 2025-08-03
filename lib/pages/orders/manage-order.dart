@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import '/models/order.dart';
 import 'package:go_router/go_router.dart';
-import 'package:my_vendor_app/common/common_layout.dart'; // Adjust this path
+import 'package:my_vendor_app/common/common_layout.dart';
 
 class OrderViewPage extends StatelessWidget {
-  final Order order;
+  final Map<String, dynamic> order;
 
   const OrderViewPage({super.key, required this.order});
 
@@ -34,24 +33,46 @@ class OrderViewPage extends StatelessWidget {
               'image':
                   images.isNotEmpty
                       ? images[0]['url']
-                      : 'https://via.placeholder.com/200', // fallback image
+                      : 'https://via.placeholder.com/200',
             };
           }).toList(),
     };
   }
 
+  Color _statusColor(String status) {
+    switch (status.toUpperCase()) {
+      case 'PENDING':
+        return Colors.orange;
+      case 'SHIPPED':
+        return Colors.blue;
+      case 'DELIVERED':
+        return Colors.green;
+      case 'RETURNED':
+        return Colors.purple;
+      case 'CANCELLED':
+        return Colors.red;
+      default:
+        return Colors.grey;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final dateFormatted = DateFormat(
-      'dd MMM yyyy – hh:mm a',
-    ).format(order.createdAt);
-    final totalFormatted = '₹${order.total.toStringAsFixed(2)}';
+    final createdAt =
+        DateTime.tryParse(order['createdAt'] ?? '') ??
+        DateTime.now(); // Fallback
+    final dateFormatted = DateFormat('dd MMM yyyy – hh:mm a').format(createdAt);
+    final total = order['total']?.toDouble() ?? 0.0;
+    final totalFormatted = '₹${total.toStringAsFixed(2)}';
+
+    final customer = order['customer'] ?? {};
+    final items = order['items'] as List? ?? [];
 
     return CommonLayout(
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Rebuilt AppBar UI as a header
+          // AppBar-like header
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
             child: Row(
@@ -75,10 +96,11 @@ class OrderViewPage extends StatelessWidget {
                 ),
                 TextButton.icon(
                   onPressed: () {
+                    print(convertToMockOrder(order));
                     context.go(
                       '/orders/invoice',
                       extra: {
-                        'order': convertToMockOrder(order.toJson()),
+                        'order': convertToMockOrder(order),
                         'source': 'management',
                       },
                     );
@@ -105,14 +127,14 @@ class OrderViewPage extends StatelessWidget {
 
           const Divider(height: 32),
 
-          // Main content (scrollable)
+          // Content
           Expanded(
             child: SingleChildScrollView(
               padding: const EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildDetailTile('Order ID', '#${order.id}'),
+                  _buildDetailTile('Order ID', '#${order['id']}'),
                   Row(
                     children: [
                       const SizedBox(
@@ -129,11 +151,11 @@ class OrderViewPage extends StatelessWidget {
                           vertical: 4,
                         ),
                         decoration: BoxDecoration(
-                          color: _statusColor(order.status),
+                          color: _statusColor(order['status']),
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: Text(
-                          orderStatusToString(order.status),
+                          order['status'] ?? 'UNKNOWN',
                           style: const TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.w500,
@@ -154,8 +176,9 @@ class OrderViewPage extends StatelessWidget {
                     style: Theme.of(context).textTheme.titleMedium,
                   ),
                   const SizedBox(height: 8),
-                  _buildDetailTile('Name', order.customer!['name']),
-                  _buildDetailTile('Email', order.customer!['email']),
+                  _buildDetailTile('Name', customer['name'] ?? 'N/A'),
+                  _buildDetailTile('Email', customer['email'] ?? 'N/A'),
+                  _buildDetailTile('Phone', customer['phone'] ?? 'N/A'),
                   const SizedBox(height: 16),
                   const Divider(),
                   const SizedBox(height: 12),
@@ -166,29 +189,52 @@ class OrderViewPage extends StatelessWidget {
                     style: Theme.of(context).textTheme.titleMedium,
                   ),
                   const SizedBox(height: 8),
-                  ...order.items.map(
-                    (item) => Padding(
+                  ...items.map((item) {
+                    final product = item['product'] ?? {};
+                    final name = product['name'] ?? 'Unnamed';
+                    final qty = item['quantity'] ?? 0;
+                    final price = item['price']?.toDouble() ?? 0.0;
+                    final images = product['images'] ?? [];
+                    final imageUrl =
+                        (images.isNotEmpty && images[0]['url'] != null)
+                            ? images[0]['url']
+                            : 'https://via.placeholder.com/200';
+
+                    return Padding(
                       padding: const EdgeInsets.only(bottom: 10),
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Expanded(flex: 2, child: Text(item.product!.name)),
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(6),
+                            child: Image.network(
+                              imageUrl,
+                              height: 48,
+                              width: 48,
+                              fit: BoxFit.cover,
+                              errorBuilder:
+                                  (_, __, ___) =>
+                                      const Icon(Icons.broken_image),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(flex: 2, child: Text(name)),
                           Expanded(
                             child: Text(
-                              'Qty: ${item.quantity}',
+                              'Qty: $qty',
                               style: const TextStyle(color: Colors.grey),
                             ),
                           ),
                           Expanded(
                             child: Text(
-                              '₹${(item.price * item.quantity).toStringAsFixed(2)}',
+                              '₹${(price * qty).toStringAsFixed(2)}',
                               textAlign: TextAlign.right,
                             ),
                           ),
                         ],
                       ),
-                    ),
-                  ),
+                    );
+                  }).toList(),
 
                   const SizedBox(height: 16),
                   const Divider(),
@@ -236,20 +282,5 @@ class OrderViewPage extends StatelessWidget {
         ],
       ),
     );
-  }
-
-  Color _statusColor(OrderStatus status) {
-    switch (status) {
-      case OrderStatus.PENDING:
-        return Colors.orange;
-      case OrderStatus.SHIPPED:
-        return Colors.blue;
-      case OrderStatus.DELIVERED:
-        return Colors.green;
-      case OrderStatus.RETURNED:
-        return Colors.purple;
-      case OrderStatus.CANCELLED:
-        return Colors.red;
-    }
   }
 }

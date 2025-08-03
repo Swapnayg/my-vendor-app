@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:my_vendor_app/common/common_layout.dart';
 import 'package:my_vendor_app/models/user.dart';
+import 'package:my_vendor_app/pages/ChatBubble.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ChatPage extends StatefulWidget {
@@ -17,7 +18,6 @@ class ChatPage extends StatefulWidget {
 
 class _ChatPageState extends State<ChatPage> {
   final TextEditingController messageController = TextEditingController();
-
   int? vendorId;
 
   @override
@@ -27,12 +27,22 @@ class _ChatPageState extends State<ChatPage> {
   }
 
   Future<void> initializeVendor() async {
-    final prefs = await SharedPreferences.getInstance();
-    vendorId = prefs.getInt('userId');
-    setState(() {});
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final userIdString = prefs.getString('userId');
+      vendorId = int.tryParse(userIdString ?? '');
+      setState(() {});
+    } catch (e, stack) {
+      print('[ERROR] Failed to initialize vendorId');
+      print(e);
+      print(stack);
+    }
   }
 
-  String get chatId => '$vendorId-${widget.customerId}';
+  String get chatId {
+    final id = '$vendorId-${widget.customerId}';
+    return id;
+  }
 
   Stream<QuerySnapshot> getChatMessagesStream() {
     return FirebaseFirestore.instance
@@ -44,25 +54,31 @@ class _ChatPageState extends State<ChatPage> {
   }
 
   Future<void> sendMessageToFirestore(String text) async {
-    if (vendorId == null || text.trim().isEmpty) return;
+    try {
+      if (vendorId == null || text.trim().isEmpty) return;
 
-    final messageData = {
-      'senderId': vendorId.toString(),
-      'content': text.trim(),
-      'sentAt': Timestamp.now(),
-    };
+      final messageData = {
+        'senderId': vendorId.toString(),
+        'content': text.trim(),
+        'sentAt': Timestamp.now(),
+      };
 
-    final chatRef = FirebaseFirestore.instance.collection('chats').doc(chatId);
+      final chatRef = FirebaseFirestore.instance
+          .collection('chats')
+          .doc(chatId);
 
-    // Ensure chat document exists
-    await chatRef.set({
-      'vendorId': vendorId,
-      'customerId': widget.customerId,
-      'createdAt': FieldValue.serverTimestamp(),
-    }, SetOptions(merge: true));
+      await chatRef.set({
+        'vendorId': vendorId,
+        'customerId': widget.customerId,
+        'createdAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
 
-    // Add the message
-    await chatRef.collection('messages').add(messageData);
+      await chatRef.collection('messages').add(messageData);
+    } catch (e, stack) {
+      print('[ERROR] Failed to send message');
+      print(e);
+      print(stack);
+    }
   }
 
   @override
@@ -99,9 +115,22 @@ class _ChatPageState extends State<ChatPage> {
                     : StreamBuilder<QuerySnapshot>(
                       stream: getChatMessagesStream(),
                       builder: (context, snapshot) {
-                        if (!snapshot.hasData) {
+                        if (snapshot.connectionState ==
+                            ConnectionState.waiting) {
                           return const Center(
                             child: CircularProgressIndicator(),
+                          );
+                        }
+
+                        if (snapshot.hasError) {
+                          return Center(
+                            child: Text("Error: ${snapshot.error}"),
+                          );
+                        }
+
+                        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                          return const Center(
+                            child: Text("No messages yet. Say hello!"),
                           );
                         }
 
@@ -114,26 +143,38 @@ class _ChatPageState extends State<ChatPage> {
                           ),
                           itemCount: docs.length,
                           itemBuilder: (context, index) {
-                            final data =
-                                docs[index].data() as Map<String, dynamic>;
-                            final isSentByMe =
-                                data['senderId'] != widget.customerId;
+                            try {
+                              final data =
+                                  docs[index].data() as Map<String, dynamic>;
+                              final senderIdRaw = data['senderId'];
+                              final isSentByMe =
+                                  senderIdRaw.toString() != widget.customerId;
 
-                            return ChatBubble(
-                              text: data['content'] ?? '',
-                              time:
-                                  (data['sentAt'] as Timestamp?)
-                                      ?.toDate()
-                                      .toLocal()
-                                      .toString() ??
-                                  '',
-                              isSentByMe: isSentByMe,
-                              avatarUrl:
-                                  isSentByMe
-                                      ? 'https://i.pravatar.cc/150?img=11'
-                                      : (widget.user.avatarUrl ??
-                                          'https://i.pravatar.cc/150?img=1'),
-                            );
+                              return ChatBubble(
+                                text: data['content'] ?? '',
+                                time:
+                                    (data['sentAt'] as Timestamp?)
+                                        ?.toDate()
+                                        .toString() ??
+                                    '',
+                                isSentByMe: isSentByMe,
+                                avatarUrl:
+                                    isSentByMe
+                                        ? '' // vendor avatar if needed
+                                        : (widget.user.avatarUrl ?? ''),
+                                username:
+                                    isSentByMe
+                                        ? 'Vendor'
+                                        : widget.user.username,
+                              );
+                            } catch (e, stack) {
+                              print('[ERROR] Rendering chat failed at $index');
+                              print(e);
+                              print(stack);
+                              return const ListTile(
+                                title: Text('⚠️ Failed to load message'),
+                              );
+                            }
                           },
                         );
                       },
@@ -202,7 +243,7 @@ class _ChatPageState extends State<ChatPage> {
         radius: 18,
         backgroundColor: Colors.grey[300],
         child: Text(
-          user.username.isNotEmpty ? user.username[0].toUpperCase() : '?',
+          user.username!.isNotEmpty ? user.username![0].toUpperCase() : '?',
           style: const TextStyle(
             fontWeight: FontWeight.bold,
             color: Colors.black,
@@ -210,74 +251,5 @@ class _ChatPageState extends State<ChatPage> {
         ),
       );
     }
-  }
-}
-
-class ChatBubble extends StatelessWidget {
-  final String text;
-  final String time;
-  final bool isSentByMe;
-  final String avatarUrl;
-
-  const ChatBubble({
-    super.key,
-    required this.text,
-    required this.time,
-    required this.isSentByMe,
-    required this.avatarUrl,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      alignment: isSentByMe ? Alignment.centerRight : Alignment.centerLeft,
-      child: Row(
-        mainAxisAlignment:
-            isSentByMe ? MainAxisAlignment.end : MainAxisAlignment.start,
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          if (!isSentByMe)
-            CircleAvatar(radius: 14, backgroundImage: NetworkImage(avatarUrl)),
-          const SizedBox(width: 6),
-          Flexible(
-            child: Column(
-              crossAxisAlignment:
-                  isSentByMe
-                      ? CrossAxisAlignment.end
-                      : CrossAxisAlignment.start,
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 14,
-                    vertical: 10,
-                  ),
-                  decoration: BoxDecoration(
-                    color:
-                        isSentByMe ? const Color(0xFF5E4AE3) : Colors.grey[100],
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    text,
-                    style: TextStyle(
-                      color: isSentByMe ? Colors.white : Colors.black,
-                      fontSize: 15,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  time,
-                  style: TextStyle(fontSize: 11, color: Colors.grey[600]),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 6),
-          if (isSentByMe)
-            CircleAvatar(radius: 14, backgroundImage: NetworkImage(avatarUrl)),
-        ],
-      ),
-    );
   }
 }
