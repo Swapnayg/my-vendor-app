@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 import '../common/common_layout.dart';
 import '../theme/colors.dart';
+import '../widgets/chart_widgets.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});

@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:http/http.dart' as http;
+import 'package:my_vendor_app/common/common_layout.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class CommissionSummaryPage extends StatefulWidget {
@@ -50,25 +51,38 @@ class _CommissionSummaryPageState extends State<CommissionSummaryPage> {
       return const Center(child: CircularProgressIndicator());
     }
 
-    return Scaffold(
-      appBar: AppBar(title: const Text("Commission Summary")),
-      body: SingleChildScrollView(
+    return CommonLayout(
+      body: Container(
         padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            _buildInfoCard("Total Sales", "₹${reportData['totalSales'] ?? 0}"),
-            _buildInfoCard("Orders", "${reportData['totalOrders'] ?? 0}"),
-            _buildInfoCard(
-              "New Customers",
-              "${reportData['newCustomers'] ?? 0}",
-            ),
-            _buildInfoCard(
-              "Total Commission",
-              "₹${reportData['finalTotalCommission'] ?? 0}",
-            ),
-            const SizedBox(height: 24),
-            _buildCommissionChart(),
-          ],
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            children: [
+              Row(
+                children: [
+                  const Text(
+                    "Commission Summary",
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  ),
+                ],
+              ),
+              _buildInfoCard(
+                "Total Sales",
+                "₹${reportData['totalSales'] ?? 0}",
+              ),
+              _buildInfoCard("Orders", "${reportData['totalOrders'] ?? 0}"),
+              _buildInfoCard(
+                "New Customers",
+                "${reportData['newCustomers'] ?? 0}",
+              ),
+              _buildInfoCard(
+                "Total Commission",
+                "₹${reportData['finalTotalCommission'] ?? 0}",
+              ),
+              const SizedBox(height: 24),
+              _buildCommissionChart(),
+            ],
+          ),
         ),
       ),
     );
@@ -95,27 +109,30 @@ class _CommissionSummaryPageState extends State<CommissionSummaryPage> {
 
   Widget _buildCommissionChart() {
     final trends = reportData['productCommissionTrends'] ?? [];
+    final List<Color> productColors = [
+      Colors.blue,
+      Colors.pink,
+      Colors.orange,
+      Colors.green,
+      Colors.purple,
+      Colors.teal,
+      Colors.indigo,
+      Colors.redAccent,
+    ];
 
     if (trends.isEmpty || trends is! List) {
       return const Center(child: Text("No product commission trend data."));
     }
 
-    final colors = [
-      Colors.blue,
-      Colors.green,
-      Colors.orange,
-      Colors.purple,
-      Colors.teal,
-      Colors.indigo,
-      Colors.redAccent,
-      Colors.brown,
-    ];
+    final List<Color> colors = List.generate(
+      trends.length,
+      (i) => Colors.grey.shade400,
+    );
 
     final List<BarChartGroupData> bars = [];
 
     for (int i = 0; i < trends.length; i++) {
       final item = trends[i];
-      final name = item['name'] ?? 'Unnamed';
       final commission = (item['totalCommission'] as num?)?.toDouble() ?? 0;
 
       bars.add(
@@ -124,7 +141,9 @@ class _CommissionSummaryPageState extends State<CommissionSummaryPage> {
           barRods: [
             BarChartRodData(
               toY: commission,
-              color: colors[i % colors.length],
+              color:
+                  productColors[i %
+                      productColors.length], // Unique color per product
               width: 20,
               borderRadius: BorderRadius.circular(4),
             ),
@@ -169,9 +188,23 @@ class _CommissionSummaryPageState extends State<CommissionSummaryPage> {
                     reservedSize: 40,
                   ),
                 ),
+                topTitles: AxisTitles(
+                  sideTitles: SideTitles(showTitles: false),
+                ),
+                rightTitles: AxisTitles(
+                  sideTitles: SideTitles(showTitles: false),
+                ),
               ),
-              gridData: FlGridData(show: true),
-              borderData: FlBorderData(show: true),
+              gridData: FlGridData(show: false), // ❌ Hide grid lines
+              borderData: FlBorderData(
+                show: true,
+                border: const Border(
+                  left: BorderSide(color: Colors.black12),
+                  bottom: BorderSide(color: Colors.black12),
+                  top: BorderSide.none,
+                  right: BorderSide.none,
+                ),
+              ),
               maxY:
                   trends
                       .map(

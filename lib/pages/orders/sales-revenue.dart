@@ -17,6 +17,9 @@ class _SalesRevenuePageState extends State<SalesRevenuePage> {
   DateTime selectedDate = DateTime.now();
   final dateFormatter = DateFormat('MMM dd, yyyy');
   List<Map<String, dynamic>> salesData = [];
+  double totalSales = 0;
+  double totalCommission = 0;
+  String topProduct = 'N/A';
   bool isLoading = true;
 
   @override
@@ -29,13 +32,11 @@ class _SalesRevenuePageState extends State<SalesRevenuePage> {
     try {
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('token');
+      if (token == null) throw Exception('Token not found');
 
-      if (token == null) {
-        throw Exception('Token not found');
-      }
-
+      final formattedDate = DateFormat('yyyy-MM-dd').format(selectedDate);
       final uri = Uri.parse(
-        'http://localhost:3000/api/MobileApp/vendor/sales-revenue',
+        'http://localhost:3000/api/MobileApp/vendor/sales-revenue?date=$formattedDate',
       );
 
       final res = await http.get(
@@ -45,7 +46,7 @@ class _SalesRevenuePageState extends State<SalesRevenuePage> {
 
       if (res.statusCode == 200) {
         final body = jsonDecode(res.body);
-        final List<dynamic> rawData = body['data'] ?? [];
+        final List<dynamic> rawData = body['salesData'] ?? [];
 
         setState(() {
           salesData =
@@ -58,6 +59,11 @@ class _SalesRevenuePageState extends State<SalesRevenuePage> {
                   'delivered': item['delivered'] ?? 0,
                 };
               }).toList();
+
+          totalSales = (body['totalSales'] ?? 0).toDouble();
+          totalCommission = (body['totalCommission'] ?? 0).toDouble();
+          topProduct = body['topProduct']?['name'] ?? 'N/A';
+
           isLoading = false;
         });
       } else {
@@ -82,7 +88,7 @@ class _SalesRevenuePageState extends State<SalesRevenuePage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Filters Row
+                    // Filter
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
@@ -105,7 +111,7 @@ class _SalesRevenuePageState extends State<SalesRevenuePage> {
                                 foregroundColor: Colors.white,
                               ),
                               onPressed: () async {
-                                final DateTime? picked = await showDatePicker(
+                                final picked = await showDatePicker(
                                   context: context,
                                   initialDate: selectedDate,
                                   firstDate: DateTime(2023),
@@ -132,19 +138,19 @@ class _SalesRevenuePageState extends State<SalesRevenuePage> {
                       children: [
                         _revenueCard(
                           "Total Sales",
-                          "₹24,000",
+                          "₹${totalSales.toStringAsFixed(0)}",
                           Colors.blue.shade50,
                           Colors.blue,
                         ),
                         _revenueCard(
                           "Commission",
-                          "₹4,000",
+                          "₹${totalCommission.toStringAsFixed(0)}",
                           Colors.pink.shade50,
                           Colors.pink,
                         ),
                         _revenueCard(
                           "Top Product",
-                          "Smart Watch",
+                          topProduct,
                           Colors.green.shade50,
                           Colors.green,
                         ),
@@ -169,11 +175,25 @@ class _SalesRevenuePageState extends State<SalesRevenuePage> {
 
                     // Chart
                     AspectRatio(
-                      aspectRatio: 1.6,
+                      aspectRatio: isMobile ? 1 : 2.2,
                       child: BarChart(
                         BarChartData(
                           alignment: BarChartAlignment.spaceAround,
+                          groupsSpace: 12,
+                          maxY: getMaxY().toDouble(),
                           titlesData: FlTitlesData(
+                            leftTitles: AxisTitles(
+                              sideTitles: SideTitles(
+                                showTitles: true,
+                                reservedSize: 42,
+                                getTitlesWidget: (value, meta) {
+                                  return Text(
+                                    value.toInt().toString(),
+                                    style: const TextStyle(fontSize: 12),
+                                  );
+                                },
+                              ),
+                            ),
                             bottomTitles: AxisTitles(
                               sideTitles: SideTitles(
                                 showTitles: true,
@@ -191,18 +211,6 @@ class _SalesRevenuePageState extends State<SalesRevenuePage> {
                                 },
                               ),
                             ),
-                            leftTitles: AxisTitles(
-                              sideTitles: SideTitles(
-                                showTitles: true,
-                                reservedSize: 40,
-                                getTitlesWidget: (value, meta) {
-                                  return Text(
-                                    "${(value / 1000).toStringAsFixed(0)}k",
-                                    style: const TextStyle(fontSize: 12),
-                                  );
-                                },
-                              ),
-                            ),
                             topTitles: AxisTitles(
                               sideTitles: SideTitles(showTitles: false),
                             ),
@@ -211,34 +219,21 @@ class _SalesRevenuePageState extends State<SalesRevenuePage> {
                             ),
                           ),
                           borderData: FlBorderData(show: false),
-                          gridData: FlGridData(show: false),
+                          gridData: FlGridData(
+                            show: false,
+                            drawVerticalLine: false,
+                          ),
                           barGroups: List.generate(salesData.length, (index) {
                             final day = salesData[index];
                             return BarChartGroupData(
                               x: index,
+                              barsSpace: 2,
                               barRods: [
-                                BarChartRodData(
-                                  toY: (day['ordered'] as num).toDouble(),
-                                  color: Colors.blue,
-                                  width: 8,
-                                ),
-                                BarChartRodData(
-                                  toY: (day['cancelled'] as num).toDouble(),
-                                  color: Colors.orange,
-                                  width: 8,
-                                ),
-                                BarChartRodData(
-                                  toY: (day['returned'] as num).toDouble(),
-                                  color: Colors.red,
-                                  width: 8,
-                                ),
-                                BarChartRodData(
-                                  toY: (day['delivered'] as num).toDouble(),
-                                  color: Colors.green,
-                                  width: 8,
-                                ),
+                                _bar(day['ordered'], Colors.blue),
+                                _bar(day['cancelled'], Colors.orange),
+                                _bar(day['returned'], Colors.red),
+                                _bar(day['delivered'], Colors.green),
                               ],
-                              barsSpace: 4,
                             );
                           }),
                         ),
@@ -248,6 +243,32 @@ class _SalesRevenuePageState extends State<SalesRevenuePage> {
                 ),
               ),
     );
+  }
+
+  BarChartRodData _bar(num y, Color color) {
+    return BarChartRodData(
+      toY: y.toDouble(),
+      width: 10,
+      borderRadius: BorderRadius.circular(4),
+      color: color,
+    );
+  }
+
+  int getMaxY() {
+    int max = 10;
+    for (var item in salesData) {
+      final values = [
+        item['ordered'],
+        item['cancelled'],
+        item['returned'],
+        item['delivered'],
+      ];
+      final itemMax = (values
+          .map((e) => e as int)
+          .reduce((a, b) => a > b ? a : b));
+      if (itemMax > max) max = itemMax;
+    }
+    return (max * 1.2).ceil(); // Add 20% headroom
   }
 
   Widget _revenueCard(
